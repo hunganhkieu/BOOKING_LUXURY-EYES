@@ -1,13 +1,12 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { Form, Input, Button, Card, DatePicker, Radio } from "antd";
 import {
-  UserOutlined,
+  IdcardOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
-  IdcardOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import { Button, Card, DatePicker, Form, Input, Radio } from "antd";
+import { Link } from "react-router-dom";
 
 const RegisterPage = () => {
   return (

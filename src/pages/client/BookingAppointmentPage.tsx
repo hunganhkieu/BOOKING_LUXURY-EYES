@@ -1,29 +1,28 @@
-import React, { useState } from "react";
 import {
-  Card,
-  Input,
-  Button,
-  Select,
-  DatePicker,
-  Avatar,
-  Tag,
-  Modal,
-  Radio,
-} from "antd";
-import {
-  SearchOutlined,
-  UserOutlined,
   CalendarOutlined,
-  EnvironmentOutlined,
-  HomeOutlined,
-  MedicineBoxOutlined,
-  SunOutlined,
   CloudOutlined,
+  EnvironmentOutlined,
   FileImageOutlined,
-  PhoneOutlined,
+  HomeOutlined,
   IdcardOutlined,
   MailOutlined,
+  MedicineBoxOutlined,
+  PhoneOutlined,
+  SearchOutlined,
+  SunOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import {
+  Avatar,
+  Button,
+  Card,
+  DatePicker,
+  Input,
+  Modal,
+  Radio,
+  Select,
+} from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const { RangePicker } = DatePicker;
@@ -239,7 +238,7 @@ const BookingAppointmentPage = () => {
                   placeholder="Tìm kiếm..."
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.label ?? "")
+                    String(option?.label ?? "")
                       .toLowerCase()
                       .includes(input.toLowerCase())
                   }
