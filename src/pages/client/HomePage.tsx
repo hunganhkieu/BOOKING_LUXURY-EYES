@@ -1,14 +1,12 @@
 import {
   CalendarOutlined,
-  FileTextOutlined,
   MedicineBoxOutlined,
   RightOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Badge, Button, Card, Carousel } from "antd";
 import { Link } from "react-router-dom";
-import HeaderClient from "../layouts/HeaderClient";
-import FooterClient from "../layouts/FooterClient";
+import FooterClient from "../../layouts/FooterClient";
 
 const HomePage = () => {
   const services = [
@@ -16,7 +14,7 @@ const HomePage = () => {
       icon: <CalendarOutlined className="text-3xl text-blue-600" />,
       title: "Đặt khám online",
       desc: "Đặt lịch nhanh chóng",
-      link: "/booking",
+      link: "/dat-lich-kham",
     },
     // {
     //   icon: <FileTextOutlined className="text-3xl text-green-600" />,
@@ -28,7 +26,7 @@ const HomePage = () => {
       icon: <MedicineBoxOutlined className="text-3xl text-red-600" />,
       title: "Lịch khám",
       desc: "Quản lý lịch khám đã đặt",
-      link: "/telemedicine",
+      link: "/lich-kham",
     },
     {
       icon: <UserOutlined className="text-3xl text-purple-600" />,
@@ -61,8 +59,6 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderClient />
-
       {/* Hero Carousel */}
       <Carousel autoplay className="bg-blue-50">
         <div>
@@ -74,7 +70,7 @@ const HomePage = () => {
               <p className="text-xl mb-6">
                 Đội ngũ bác sĩ giàu kinh nghiệm, trang thiết bị hiện đại
               </p>
-              <Link to="/booking">
+              <Link to="/dat-lich-kham">
                 <Button type="primary" size="large" icon={<CalendarOutlined />}>
                   Đặt lịch ngay
                 </Button>
