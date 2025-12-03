@@ -1,7 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { Form, Input, Button, Checkbox, Card } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
+import { Button, Card, Checkbox, Form, Input } from "antd";
+import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   return (

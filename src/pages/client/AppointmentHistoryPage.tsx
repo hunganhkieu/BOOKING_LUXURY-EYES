@@ -1,29 +1,18 @@
-import React, { useState } from "react";
 import {
-  Card,
-  Input,
-  Button,
-  Tag,
-  Avatar,
-  Tabs,
-  Modal,
-  Select,
-  DatePicker,
-} from "antd";
-import {
-  SearchOutlined,
-  UserOutlined,
   CalendarOutlined,
-  EnvironmentOutlined,
-  ClockCircleOutlined,
-  PhoneOutlined,
-  FilterOutlined,
-  FileTextOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   CloseCircleOutlined,
-  SyncOutlined,
+  EnvironmentOutlined,
+  FileTextOutlined,
+  FilterOutlined,
   InfoCircleOutlined,
+  SearchOutlined,
+  SyncOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import { Avatar, Button, Card, Input, Modal, Select, Tabs, Tag } from "antd";
+import { useState } from "react";
 
 const { TextArea } = Input;
 

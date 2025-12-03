@@ -1,62 +1,41 @@
-import React, { useState } from "react";
 import {
-  Card,
-  Input,
-  Button,
-  Select,
-  DatePicker,
-  Avatar,
-  Tag,
-  Modal,
-  Radio,
-} from "antd";
-import {
-  SearchOutlined,
-  UserOutlined,
   CalendarOutlined,
-  EnvironmentOutlined,
-  HomeOutlined,
-  MedicineBoxOutlined,
-  SunOutlined,
   CloudOutlined,
+  EnvironmentOutlined,
   FileImageOutlined,
-  PhoneOutlined,
+  HomeOutlined,
   IdcardOutlined,
   MailOutlined,
+  MedicineBoxOutlined,
+  PhoneOutlined,
+  SearchOutlined,
+  SunOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import {
+  Avatar,
+  Button,
+  Card,
+  DatePicker,
+  Input,
+  Modal,
+  Radio,
+  Select,
+} from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useGetDoctorsQuery } from "../../app/services/doctorApi";
+import type { Doctor } from "../../types/Doctor";
+import type { Patient } from "../../types/Patient";
+import type { Schedule } from "../../types/Schedule";
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
-interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  price: string;
-}
-
-interface Schedule {
-  date: string;
-  time: string;
-  location: string;
-  room: string;
-  service: string;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  dateOfBirth?: string;
-  gender?: string;
-  identityCard?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relation: "self" | "family";
-}
-
 const BookingAppointmentPage = () => {
+  const { data, isLoading, isFetching, isError, refetch } =
+    useGetDoctorsQuery();
+  const doctors: Doctor[] = data?.data ?? [];
+
   const [selectedPerson, setSelectedPerson] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -90,45 +69,6 @@ const BookingAppointmentPage = () => {
   });
 
   const nav = useNavigate();
-
-  const doctors: Doctor[] = [
-    {
-      id: "1",
-      name: "TS Vũ Việt Hằng",
-      specialty: "Y học cổ truyền",
-      price: "350.000",
-    },
-    {
-      id: "2",
-      name: "ThsBS Vũ Văn Tiến",
-      specialty: "Tai mũi họng",
-      price: "350.000",
-    },
-    {
-      id: "3",
-      name: "ThsBSNT Vũ Trung Hải",
-      specialty: "Ngoại Thần kinh - Cột sống",
-      price: "120.000",
-    },
-    {
-      id: "4",
-      name: "ThsBS Vũ Trọng Tùng",
-      specialty: "Bác sỹ gia đình",
-      price: "120.000",
-    },
-    {
-      id: "5",
-      name: "ThsBSNT Vũ Thùy Linh",
-      specialty: "Dị ứng - Miễn dịch lâm sàng",
-      price: "120.000",
-    },
-    {
-      id: "6",
-      name: "BSCKII Vũ Thu Phương",
-      specialty: "Da liễu",
-      price: "350.000",
-    },
-  ];
 
   const scheduleData = {
     dates: [
@@ -212,6 +152,8 @@ const BookingAppointmentPage = () => {
     }
   };
 
+  if (isLoading) return <div className="text-center mt-3">Loading...</div>;
+  if (isError) return <div>Error loading doctors</div>;
   return (
     <div className="min-h-screen bg-gray-50 mt-4">
       <div className="max-w-7xl mx-auto px-4">
@@ -238,11 +180,13 @@ const BookingAppointmentPage = () => {
                   size="large"
                   placeholder="Tìm kiếm..."
                   showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
+                  filterOption={(input, option) => {
+                    const label = option?.label;
+                    if (typeof label === "string") {
+                      return label.toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
                 >
                   <Select.OptGroup label="Khám cho bản thân">
                     {patients
@@ -314,42 +258,55 @@ const BookingAppointmentPage = () => {
               {/* Doctor List */}
               {!selectedDoctor && (
                 <div className="space-y-3">
-                  {doctors.map((doctor) => (
-                    <Card
-                      key={doctor.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      styles={{ body: { padding: "16px" } }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Avatar size={48} icon={<UserOutlined />} />
-                          <div>
-                            <h3 className="font-semibold text-gray-800">
-                              {doctor.name}
-                            </h3>
-                            <p className="text-sm text-blue-600">
-                              Chuyên khoa: {doctor.specialty}
-                            </p>
+                  {isFetching && (
+                    <div className="absolute top-0 right-0 p-2 text-sm text-gray-500">
+                      Updating...
+                    </div>
+                  )}
+                  <Button
+                    type="primary"
+                    onClick={() => refetch()}
+                    loading={isLoading}
+                  >
+                    Reset dữ liệu
+                  </Button>
+                  {doctors &&
+                    doctors.map((doctor: Doctor) => (
+                      <Card
+                        key={doctor._id}
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        style={{ padding: "16px" }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <Avatar size={48} icon={<UserOutlined />} />
+                            <div>
+                              <h3 className="font-semibold text-gray-800">
+                                {doctor.name}
+                              </h3>
+                              <p className="text-sm text-blue-600">
+                                Kinh nghiệm: {doctor.experience_year} năm
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-500">Giá khám:</p>
+                              <p className="text-lg font-bold text-orange-500">
+                                {doctor.price} đ
+                              </p>
+                            </div>
+                            <Button
+                              type="primary"
+                              size="large"
+                              onClick={() => handleDoctorSelect(doctor)}
+                            >
+                              Chọn
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-xs text-gray-500">Giá khám:</p>
-                            <p className="text-lg font-bold text-orange-500">
-                              {doctor.price} đ
-                            </p>
-                          </div>
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => handleDoctorSelect(doctor)}
-                          >
-                            Chọn
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
                 </div>
               )}
 
@@ -366,7 +323,7 @@ const BookingAppointmentPage = () => {
                             {selectedDoctor.name}
                           </h3>
                           <p className="text-sm text-blue-600">
-                            Chuyên khoa: {selectedDoctor.specialty}
+                            Kinh nghiệm: {selectedDoctor.experience_year} năm
                           </p>
                         </div>
                       </div>
@@ -658,7 +615,7 @@ const BookingAppointmentPage = () => {
                 placeholder="Chọn ngày sinh"
                 className="w-full"
                 format="DD/MM/YYYY"
-                onChange={(date, dateString) =>
+                onChange={(_, dateString) =>
                   setNewPatient({
                     ...newPatient,
                     dateOfBirth: dateString as string,
