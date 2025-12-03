@@ -180,11 +180,13 @@ const BookingAppointmentPage = () => {
                   size="large"
                   placeholder="Tìm kiếm..."
                   showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
+                  filterOption={(input, option) => {
+                    const label = option?.label;
+                    if (typeof label === "string") {
+                      return label.toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
                 >
                   <Select.OptGroup label="Khám cho bản thân">
                     {patients
