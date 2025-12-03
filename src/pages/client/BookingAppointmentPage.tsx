@@ -615,7 +615,7 @@ const BookingAppointmentPage = () => {
                 placeholder="Chọn ngày sinh"
                 className="w-full"
                 format="DD/MM/YYYY"
-                onChange={(date, dateString) =>
+                onChange={(_, dateString) =>
                   setNewPatient({
                     ...newPatient,
                     dateOfBirth: dateString as string,
