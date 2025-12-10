@@ -69,9 +69,10 @@ const TimeSlotPicker = ({
             <SunOutlined className="text-yellow-500" />
             <span className="font-semibold">Sáng</span>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {morningSlot ? (
-              morningSlot.map((slot) => (
+
+          {morningSlot && morningSlot?.length > 0 ? (
+            <div className="grid grid-cols-5 gap-2">
+              {morningSlot.map((slot) => (
                 <Button
                   key={slot.scheduleId + slot.time}
                   type={
@@ -81,11 +82,11 @@ const TimeSlotPicker = ({
                 >
                   {slot.time}
                 </Button>
-              ))
-            ) : (
-              <p>Chưa có giờ cụ thể</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p>chưa có giờ cụ thể</p>
+          )}
         </div>
 
         <div>
@@ -93,9 +94,10 @@ const TimeSlotPicker = ({
             <CloudOutlined className="text-blue-500" />
             <span className="font-semibold">Chiều</span>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {afternoonSlots ? (
-              afternoonSlots.map((slot) => (
+
+          {afternoonSlots && afternoonSlots?.length > 0 ? (
+            <div className="grid grid-cols-5 gap-2">
+              {afternoonSlots.map((slot) => (
                 <Button
                   key={slot.scheduleId + slot.time}
                   type={
@@ -105,11 +107,11 @@ const TimeSlotPicker = ({
                 >
                   {slot.time}
                 </Button>
-              ))
-            ) : (
-              <p>Chưa có giờ cụ thể</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p>chưa có giờ cụ thể</p>
+          )}
         </div>
       </div>
     </div>

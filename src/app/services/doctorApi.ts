@@ -9,9 +9,9 @@ export const doctorApi = createApi({
   tagTypes: ["Doctors"], // khai báo danh sách các tag sẽ dùng
   endpoints: (builder) => ({
     // builder là object chứa các hàm để tạo endpoint
-    getDoctors: builder.query<DoctorResponse, string>({
+    getDoctors: builder.query<DoctorResponse, { inputSearch: string }>({
       // .query là để fetch dữ liệu
-      query: (inputSearch) =>
+      query: ({ inputSearch }) =>
         `doctors/?${inputSearch ? `name=${inputSearch}` : ""}`, // nối tiếp đường dẫn với baseUrl
       providesTags: ["Doctors"], // đặt tên tag cho từng query
     }),

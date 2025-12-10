@@ -7,27 +7,46 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Button, Card, DatePicker, Input, Select } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
-import { useGetScheduleDoctorIdQuery } from "../../app/services/scheduleApi";
+import {
+  useGetScheduleDoctorIdQuery,
+  useGetSchedulesQuery,
+} from "../../app/services/scheduleApi";
 import DoctorList from "../../components/DoctorList";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
 import type { Doctor } from "../../types/Doctor";
 import type { Patient } from "../../types/Patient";
 import type { DoctorSchedule, Schedule } from "../../types/Schedule";
 import AddPatientModal from "../../components/AddPatientModal";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
-
+// console.log(RangePicker);
 const BookingAppointmentPage = () => {
-  const [inputSearch, setInputSearch] = useState("");
-  const [delaySearch, setDelaySearch] = useState("");
-  const { data, isLoading, isFetching, isError, refetch } =
-    useGetDoctorsQuery(delaySearch);
-  const doctors: Doctor[] = data?.data ?? [];
+  //doctor
+  const [inputSearch, setInputSearch] = useState<string>("");
+  const [delaySearch, setDelaySearch] = useState<string>("");
 
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+
+  const filterDate = fromDate && toDate ? { fromDate, toDate } : null;
+  const { data, isLoading, isFetching, isError, refetch } = useGetDoctorsQuery({
+    inputSearch: delaySearch,
+  });
+  const doctors: Doctor[] = data?.data ?? [];
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+
+  //schedule
+  const { data: schedulesData } = useGetSchedulesQuery();
+  const listSchedule: DoctorSchedule[] = schedulesData?.data ?? [];
   const { data: schedule } = useGetScheduleDoctorIdQuery(
     selectedDoctor?._id as string,
     {
@@ -36,7 +55,6 @@ const BookingAppointmentPage = () => {
   );
   const scheduleDoctorId: DoctorSchedule[] = schedule?.data ?? [];
   const scheduleItem = scheduleDoctorId[0];
-
   const [selectedPerson, setSelectedPerson] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
@@ -141,6 +159,56 @@ const BookingAppointmentPage = () => {
     });
   };
 
+  const handleRangeChange = (
+    dates: (Dayjs | null)[] | null
+    // dateStrings: [string, string]
+  ) => {
+    if (dates && dates[0] && dates[1]) {
+      setFromDate(dates[0].format("YYYY-MM-DD"));
+      setToDate(dates[1].format("YYYY-MM-DD"));
+
+      setSelectedDoctor(null);
+      setSelectedSchedule(null);
+    } else {
+      setFromDate("");
+      setToDate("");
+    }
+  };
+  const filteredDoctors = useMemo(() => {
+    if (!fromDate || !toDate) {
+      return doctors.map((doc) => ({ ...doc, timeSlots: [] }));
+    }
+
+    const start = fromDate; // YYYY-MM-DD
+    const end = toDate;
+
+    // Tìm các bác sĩ có slot AVAILABLE trong khoảng ngày
+    const doctorsWithAvailableSlots = doctors
+      .map((doc) => {
+        // Tìm lịch của bác sĩ này
+        const doctorSchedule = listSchedule.find((s) => s.doctorId === doc._id);
+        if (!doctorSchedule || !doctorSchedule.timeSlots) {
+          return { ...doc, timeSlots: [] };
+        }
+
+        const availableSlotsInRange = doctorSchedule.timeSlots.filter(
+          (slot) => {
+            if (slot.status !== "AVAILABLE") return false;
+            const slotDate = slot.date.split("T")[0];
+            return slotDate >= start && slotDate <= end;
+          }
+        );
+
+        return {
+          ...doc,
+          timeSlots: availableSlotsInRange,
+        };
+      })
+      .filter((doc) => doc.timeSlots.length > 0); // Chỉ giữ bác sĩ có lịch trống
+
+    return doctorsWithAvailableSlots;
+  }, [doctors, listSchedule, fromDate, toDate]);
+
   if (isLoading) return <div className="text-center mt-3">Loading...</div>;
   if (isError)
     return <div className="text-center mt-3">Error loading doctors</div>;
@@ -223,6 +291,15 @@ const BookingAppointmentPage = () => {
                   placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
                   className="w-full"
                   size="large"
+                  value={
+                    fromDate && toDate
+                      ? [
+                          dayjs(fromDate, "YYYY-MM-DD"),
+                          dayjs(toDate, "YYYY-MM-DD"),
+                        ]
+                      : undefined
+                  }
+                  onChange={handleRangeChange}
                 />
               </div>
             </Card>
@@ -246,7 +323,7 @@ const BookingAppointmentPage = () => {
                   <Button size="large" icon={<UserOutlined />}>
                     Tìm thấy
                     <span className="font-semibold">
-                      {doctors.length} bác sĩ
+                      {filteredDoctors.length} bác sĩ
                     </span>{" "}
                     phù hợp
                   </Button>
@@ -268,7 +345,7 @@ const BookingAppointmentPage = () => {
               {/* Doctor List */}
               {!selectedDoctor && (
                 <DoctorList
-                  doctors={doctors}
+                  doctors={filteredDoctors}
                   isFetching={isFetching}
                   handleDoctorSelect={handleDoctorSelect}
                 />

@@ -6,13 +6,19 @@ export const scheduleApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api-class-o1lo.onrender.com/api/luxury_eyes/",
   }),
-  tagTypes: ["Schedule"],
+  tagTypes: ["Schedules", "ScheduleId"],
   endpoints: (builder) => ({
+    getSchedules: builder.query<ScheduleResponse, void>({
+      query: () => `schedules`,
+      providesTags: ["Schedules"],
+    }),
+
     getScheduleDoctorId: builder.query<ScheduleResponse, string>({
       query: (doctorId) => `schedule?doctorId=${doctorId}`,
-      providesTags: ["Schedule"],
+      providesTags: ["ScheduleId"],
     }),
   }),
 });
 
-export const { useGetScheduleDoctorIdQuery } = scheduleApi;
+export const { useGetScheduleDoctorIdQuery, useGetSchedulesQuery } =
+  scheduleApi;
