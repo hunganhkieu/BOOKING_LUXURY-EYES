@@ -10,7 +10,6 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 import logo from "../assets/imgs/logoEye.png";
-import { handleLogout } from "../pages/auth/LogOut";
 
 const HeaderClient = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);

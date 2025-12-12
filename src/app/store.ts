@@ -1,0 +1,16 @@
+import { configureStore } from "@reduxjs/toolkit";
+import { doctorApi } from "./services/doctorApi";
+import { setupListeners } from "@reduxjs/toolkit/query";
+
+export const store = configureStore({
+  reducer: {
+    [doctorApi.reducerPath]: doctorApi.reducer,
+  },
+
+  middleware: (getDeFault) => getDeFault().concat(doctorApi.middleware), // quản lý cache và tag
+});
+
+setupListeners(store.dispatch); //kích hoạt các listener để hỗ trợ các tính năng nâng cao của RTK Query: refetchOnFocus, refetchOnReconnect
+
+export type RootState = ReturnType<typeof store.getState>; //kiểu dữ liệu toàn bộ state của store
+export type AppDispatch = typeof store.dispatch; //kiểu dữ liệu của dispatch, dùng cho useDispatch và middleware
