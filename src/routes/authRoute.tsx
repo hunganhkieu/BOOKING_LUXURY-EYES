@@ -1,14 +1,29 @@
 import AuthLayout from "../layouts/AuthLayout";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
+import AuthRoute from "../Protected/ProtectedRoutes";
 
 const authRoute = [
   {
     path: "auth",
     element: <AuthLayout />,
     children: [
-      { path: "login", Component: LoginPage },
-      { path: "register", Component: RegisterPage },
+      {
+        path: "login",
+        element: (
+          <AuthRoute>
+            <LoginPage />
+          </AuthRoute>
+        ),
+      },
+      {
+        path: "register",
+        element: (
+          <AuthRoute>
+            <RegisterPage />
+          </AuthRoute>
+        ),
+      },
     ],
   },
 ];
