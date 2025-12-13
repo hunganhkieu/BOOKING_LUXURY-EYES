@@ -6,14 +6,23 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Button, Drawer, Dropdown, Menu } from "antd";
+import { Button, Drawer, Dropdown, Menu, message } from "antd";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/imgs/logoEye.png";
 
 const HeaderClient = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const isLoggedIn = !!user;
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    message.success("Đăng xuất thành công!");
+    navigate("/auth/login");
+  };
   const menuItems: MenuProps["items"] = [
     { key: "home", label: <Link to="/">Trang chủ</Link> },
     { key: "about", label: <Link to="/about">Giới thiệu</Link> },
@@ -24,15 +33,24 @@ const HeaderClient = () => {
     { key: "contact", label: <Link to="/contact">Liên hệ</Link> },
   ];
 
-  const userMenuItems: MenuProps["items"] = [
+  const loggedMenu: MenuProps["items"] = [
     {
-      key: "login",
-      label: <Link to="/auth/login">Đăng nhập</Link>,
+      key: "profile",
+      label: <Link to="/profile">Thông tin cá nhân</Link>,
     },
     {
-      key: "register",
-      label: <Link to="/auth/register">Đăng ký</Link>,
+      key: "logout",
+      label: <span style={{ color: "red" }}>Đăng xuất</span>,
+      onClick: () => {
+        handleLogout();
+        navigate("/auth/login");
+      },
     },
+  ];
+
+  const guestMenu: MenuProps["items"] = [
+    { key: "login", label: <Link to="/auth/login">Đăng nhập</Link> },
+    { key: "register", label: <Link to="/auth/register">Đăng ký</Link> },
   ];
 
   return (
@@ -54,7 +72,6 @@ const HeaderClient = () => {
         </div>
       </div>
 
-      {/* Main Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -63,7 +80,6 @@ const HeaderClient = () => {
               <img src={logo} alt="logo" className="w-28 h-auto" />
             </Link>
 
-            {/* Desktop Menu */}
             <nav className="hidden lg:block flex-1 mx-8">
               <Menu
                 mode="horizontal"
@@ -72,19 +88,18 @@ const HeaderClient = () => {
               />
             </nav>
 
-            {/* Right Actions */}
             <div className="flex items-center gap-3">
-              {/* Desktop User Menu */}
               <Dropdown
-                menu={{ items: userMenuItems }}
+                menu={{ items: isLoggedIn ? loggedMenu : guestMenu }}
                 placement="bottomRight"
                 arrow
                 className="hidden md:block"
               >
-                <Button icon={<UserOutlined />}>Tài khoản</Button>
+                <Button icon={<UserOutlined />}>
+                  {isLoggedIn ? user.fullName : "Tài khoản"}
+                </Button>
               </Dropdown>
 
-              {/* Mobile Menu Button */}
               <Button
                 icon={<MenuOutlined />}
                 className="lg:hidden"
@@ -95,7 +110,6 @@ const HeaderClient = () => {
         </div>
       </header>
 
-      {/* Mobile Drawer */}
       <Drawer
         title="Menu"
         placement="right"
@@ -103,15 +117,37 @@ const HeaderClient = () => {
         open={drawerVisible}
       >
         <Menu mode="vertical" items={menuItems} className="border-0" />
+
         <div className="mt-4 px-4 space-y-2">
-          <Link to="/login">
-            <Button type="primary" block>
-              Đăng nhập
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button block>Đăng ký</Button>
-          </Link>
+          {!isLoggedIn ? (
+            <>
+              <Link to="/auth/login">
+                <Button type="primary" block>
+                  Đăng nhập
+                </Button>
+              </Link>
+              <Link to="/auth/register">
+                <Button block>Đăng ký</Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/profile">
+                <Button block>Thông tin cá nhân</Button>
+              </Link>
+
+              <Button
+                danger
+                block
+                onClick={() => {
+                  handleLogout();
+                  navigate("/auth/login");
+                }}
+              >
+                Đăng xuất
+              </Button>
+            </>
+          )}
         </div>
       </Drawer>
     </>

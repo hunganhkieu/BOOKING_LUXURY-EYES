@@ -6,7 +6,7 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Button, Card, DatePicker, Input, Select } from "antd";
+import { Avatar, Button, Card, DatePicker, Input, message, Select } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
@@ -24,13 +24,21 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import {
+  useCreatePatientProfileMutation,
+  useGetPatientProfileQuery,
+} from "../../app/services/patientProfile";
+import type {
+  CreatePatientInput,
+  PatientData,
+  PatientResponse,
+} from "../../types/PatientProfile";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
-// console.log(RangePicker);
 const BookingAppointmentPage = () => {
-  //doctor
+  //search doctor
   const [inputSearch, setInputSearch] = useState<string>("");
   const [delaySearch, setDelaySearch] = useState<string>("");
 
@@ -41,12 +49,15 @@ const BookingAppointmentPage = () => {
   const { data, isLoading, isFetching, isError, refetch } = useGetDoctorsQuery({
     inputSearch: delaySearch,
   });
-  const doctors: Doctor[] = data?.data ?? [];
+  const doctors: Doctor[] = useMemo(() => data?.data ?? [], [data]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
 
   //schedule
   const { data: schedulesData } = useGetSchedulesQuery();
-  const listSchedule: DoctorSchedule[] = schedulesData?.data ?? [];
+  const listSchedule: DoctorSchedule[] = useMemo(
+    () => schedulesData?.data ?? [],
+    [schedulesData]
+  );
   const { data: schedule } = useGetScheduleDoctorIdQuery(
     selectedDoctor?._id as string,
     {
@@ -55,12 +66,25 @@ const BookingAppointmentPage = () => {
   );
   const scheduleDoctorId: DoctorSchedule[] = schedule?.data ?? [];
   const scheduleItem = scheduleDoctorId[0];
+
   const [selectedPerson, setSelectedPerson] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
     null
   );
   const [symptoms, setSymptoms] = useState<string>("");
+
+  const { data: patientProfileResponse } = useGetPatientProfileQuery();
+  const PatientProData: PatientResponse[] = patientProfileResponse?.data ?? [];
+
+  const [
+    createPatientProfile,
+    // {
+    //   data: createdPatient,
+    //   isLoading: isCreatingPatient,
+    //   isError: isCreateError,
+    // },
+  ] = useCreatePatientProfileMutation();
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([
     {
@@ -118,25 +142,23 @@ const BookingAppointmentPage = () => {
     }
   };
 
-  const handleAddPatient = () => {
-    if (newPatient.name && newPatient.phone) {
+  // thêm người bệnh
+  const handleAddPatient = async (values: CreatePatientInput) => {
+    try {
+      const res = await createPatientProfile(values).unwrap(); // ← gọi API
+      message.success("thêm thành công");
+      // Thêm vào danh sách (nếu cần dùng local state)
       const patient: Patient = {
-        id: `patient-${Date.now()}`,
-        ...newPatient,
+        id: res._id,
+        ...values,
         relation: "family",
       };
+
       setPatients([...patients, patient]);
       setSelectedPerson(patient.id);
       setShowAddPatientModal(false);
-      setNewPatient({
-        name: "",
-        dateOfBirth: "",
-        gender: "",
-        identityCard: "",
-        email: "",
-        phone: "",
-        address: "",
-      });
+    } catch (error) {
+      console.error("Error creating patient:", error);
     }
   };
 
@@ -261,17 +283,15 @@ const BookingAppointmentPage = () => {
                   </Select.OptGroup>
 
                   <Select.OptGroup label="Khám cho người thân">
-                    {patients
-                      .filter((p) => p.relation === "family")
-                      .map((patient) => (
-                        <Select.Option
-                          key={patient.id}
-                          value={patient.id}
-                          label={patient.name}
-                        >
-                          {patient.name}
-                        </Select.Option>
-                      ))}
+                    {PatientProData.map((patient) => (
+                      <Select.Option
+                        key={patient._id}
+                        value={patient._id}
+                        label={patient.fullName}
+                      >
+                        {patient.fullName}
+                      </Select.Option>
+                    ))}
                     <Select.Option
                       value="add-new"
                       className="text-blue-600 font-semibold"

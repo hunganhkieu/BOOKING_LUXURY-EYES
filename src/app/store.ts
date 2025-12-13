@@ -2,15 +2,20 @@ import { configureStore } from "@reduxjs/toolkit";
 import { doctorApi } from "./services/doctorApi";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { scheduleApi } from "./services/scheduleApi";
+import { patientProfileApi } from "./services/patientProfile";
 
 export const store = configureStore({
   reducer: {
     [doctorApi.reducerPath]: doctorApi.reducer,
     [scheduleApi.reducerPath]: scheduleApi.reducer,
+    [patientProfileApi.reducerPath]: patientProfileApi.reducer,
   },
 
   middleware: (getDeFault) =>
-    getDeFault().concat(doctorApi.middleware).concat(scheduleApi.middleware), // quản lý cache và tag
+    getDeFault()
+      .concat(doctorApi.middleware)
+      .concat(scheduleApi.middleware)
+      .concat(patientProfileApi.middleware), // quản lý cache và tag
 });
 
 setupListeners(store.dispatch); //kích hoạt các listener để hỗ trợ các tính năng nâng cao của RTK Query: refetchOnFocus, refetchOnReconnect
