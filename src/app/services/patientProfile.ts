@@ -1,6 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { PatientInput } from "../../components/AddPatientModal";
-import type { PatientData, PatientResponse } from "../../types/PatientProfile";
+import type {
+  CreatePatientResponse,
+  PatientData,
+} from "../../types/PatientProfile";
 
 export const patientProfileApi = createApi({
   reducerPath: "patientProfileApi",
@@ -14,14 +17,16 @@ export const patientProfileApi = createApi({
       providesTags: ["PatientProfiles"],
     }),
 
-    createPatientProfile: builder.mutation<PatientResponse, PatientInput>({
-      query: (body) => ({
-        url: "patient-profile",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["PatientProfiles"],
-    }),
+    createPatientProfile: builder.mutation<CreatePatientResponse, PatientInput>(
+      {
+        query: (body) => ({
+          url: "patient-profile",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: ["PatientProfiles"],
+      }
+    ),
   }),
 });
 

@@ -3,12 +3,13 @@ import { doctorApi } from "./services/doctorApi";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { scheduleApi } from "./services/scheduleApi";
 import { patientProfileApi } from "./services/patientProfile";
-
+import { authSlice } from "./features/authSlice";
 export const store = configureStore({
   reducer: {
     [doctorApi.reducerPath]: doctorApi.reducer,
     [scheduleApi.reducerPath]: scheduleApi.reducer,
     [patientProfileApi.reducerPath]: patientProfileApi.reducer,
+    auth: authSlice.reducer,
   },
 
   middleware: (getDeFault) =>

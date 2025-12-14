@@ -191,6 +191,12 @@ const RegisterPage = () => {
               Đăng ký
             </Button>
           </Form.Item>
+
+          <Button block size="large" style={{ marginBottom: 12 }}>
+            <Link to="/" style={{ display: "block" }}>
+              Quay về trang chủ
+            </Link>
+          </Button>
         </Form>
 
         {/* Link login */}

@@ -21,6 +21,9 @@ export interface PatientResponse {
   updatedAt: string;
 }
 
+export interface CreatePatientResponse {
+  data: PatientResponse;
+}
 export interface PatientData {
   data: PatientResponse[];
 }

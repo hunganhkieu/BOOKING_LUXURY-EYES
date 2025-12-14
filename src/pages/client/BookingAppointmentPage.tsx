@@ -7,32 +7,31 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Button, Card, DatePicker, Input, message, Select } from "antd";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useGetDoctorsQuery } from "../../app/services/doctorApi";
-import {
-  useGetScheduleDoctorIdQuery,
-  useGetSchedulesQuery,
-} from "../../app/services/scheduleApi";
-import DoctorList from "../../components/DoctorList";
-import TimeSlotPicker from "../../components/TimeSlotPicker";
-import type { Doctor } from "../../types/Doctor";
-import type { Patient } from "../../types/Patient";
-import type { DoctorSchedule, Schedule } from "../../types/Schedule";
-import AddPatientModal from "../../components/AddPatientModal";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppSelector } from "../../app/hook";
+import { useGetDoctorsQuery } from "../../app/services/doctorApi";
 import {
   useCreatePatientProfileMutation,
   useGetPatientProfileQuery,
 } from "../../app/services/patientProfile";
+import {
+  useGetScheduleDoctorIdQuery,
+  useGetSchedulesQuery,
+} from "../../app/services/scheduleApi";
+import AddPatientModal from "../../components/AddPatientModal";
+import DoctorList from "../../components/DoctorList";
+import TimeSlotPicker from "../../components/TimeSlotPicker";
+import type { Doctor } from "../../types/Doctor";
 import type {
   CreatePatientInput,
-  PatientData,
   PatientResponse,
 } from "../../types/PatientProfile";
+import type { DoctorSchedule, Schedule } from "../../types/Schedule";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
@@ -45,7 +44,6 @@ const BookingAppointmentPage = () => {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
 
-  const filterDate = fromDate && toDate ? { fromDate, toDate } : null;
   const { data, isLoading, isFetching, isError, refetch } = useGetDoctorsQuery({
     inputSearch: delaySearch,
   });
@@ -74,9 +72,10 @@ const BookingAppointmentPage = () => {
   );
   const [symptoms, setSymptoms] = useState<string>("");
 
+  // patient-profile
+  const user = useAppSelector((state) => state.auth.user);
   const { data: patientProfileResponse } = useGetPatientProfileQuery();
   const PatientProData: PatientResponse[] = patientProfileResponse?.data ?? [];
-
   const [
     createPatientProfile,
     // {
@@ -86,21 +85,8 @@ const BookingAppointmentPage = () => {
     // },
   ] = useCreatePatientProfileMutation();
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-  const [patients, setPatients] = useState<Patient[]>([
-    {
-      id: "self",
-      name: "Nguyễn Văn A",
-      dateOfBirth: "01/01/1990",
-      gender: "male",
-      identityCard: "001234567890",
-      email: "nguyenvana@email.com",
-      phone: "0123456789",
-      address: "Số 1, Đường ABC, Quận 1, TP.HCM",
-      relation: "self",
-    },
-  ]);
 
-  const [newPatient, setNewPatient] = useState({
+  const initialPatientState = {
     name: "",
     dateOfBirth: "",
     gender: "",
@@ -108,7 +94,9 @@ const BookingAppointmentPage = () => {
     email: "",
     phone: "",
     address: "",
-  });
+  };
+
+  const [newPatient, setNewPatient] = useState(initialPatientState);
 
   const nav = useNavigate();
 
@@ -145,17 +133,10 @@ const BookingAppointmentPage = () => {
   // thêm người bệnh
   const handleAddPatient = async (values: CreatePatientInput) => {
     try {
-      const res = await createPatientProfile(values).unwrap(); // ← gọi API
+      const res = await createPatientProfile(values).unwrap();
+      console.log(res);
       message.success("thêm thành công");
-      // Thêm vào danh sách (nếu cần dùng local state)
-      const patient: Patient = {
-        id: res._id,
-        ...values,
-        relation: "family",
-      };
-
-      setPatients([...patients, patient]);
-      setSelectedPerson(patient.id);
+      setSelectedPerson(res.data._id);
       setShowAddPatientModal(false);
     } catch (error) {
       console.error("Error creating patient:", error);
@@ -196,6 +177,11 @@ const BookingAppointmentPage = () => {
       setToDate("");
     }
   };
+
+  const disabledDate = (current: Dayjs) => {
+    return current && current < dayjs().startOf("day");
+  };
+
   const filteredDoctors = useMemo(() => {
     if (!fromDate || !toDate) {
       return doctors.map((doc) => ({ ...doc, timeSlots: [] }));
@@ -269,17 +255,13 @@ const BookingAppointmentPage = () => {
                   }}
                 >
                   <Select.OptGroup label="Khám cho bản thân">
-                    {patients
-                      .filter((p) => p.relation === "self")
-                      .map((patient) => (
-                        <Select.Option
-                          key={patient.id}
-                          value={patient.id}
-                          label={patient.name}
-                        >
-                          {patient.name}
-                        </Select.Option>
-                      ))}
+                    <Select.Option
+                      key={user?._id}
+                      value={user?._id}
+                      label={user?.fullName}
+                    >
+                      {user?.fullName}
+                    </Select.Option>
                   </Select.OptGroup>
 
                   <Select.OptGroup label="Khám cho người thân">
@@ -311,6 +293,7 @@ const BookingAppointmentPage = () => {
                   placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
                   className="w-full"
                   size="large"
+                  disabledDate={disabledDate}
                   value={
                     fromDate && toDate
                       ? [
@@ -562,19 +545,9 @@ const BookingAppointmentPage = () => {
         visible={showAddPatientModal}
         onCancel={() => {
           setShowAddPatientModal(false);
-          setNewPatient({
-            name: "",
-            dateOfBirth: "",
-            gender: "",
-            identityCard: "",
-            email: "",
-            phone: "",
-            address: "",
-          });
+          setNewPatient(initialPatientState);
         }}
         onSubmit={handleAddPatient}
-        newPatient={newPatient}
-        setNewPatient={setNewPatient}
       />
     </div>
   );
