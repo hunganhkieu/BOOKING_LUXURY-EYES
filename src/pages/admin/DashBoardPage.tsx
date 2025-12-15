@@ -1,333 +1,236 @@
+import React, { useEffect, useState } from "react";
 import {
-  CalendarOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DashboardOutlined,
-  EyeOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import {
-  Avatar,
-  Badge,
-  Calendar,
   Card,
-  Col,
-  Layout,
-  List,
-  Menu,
-  Progress,
   Row,
+  Col,
   Statistic,
   Table,
   Tag,
+  Avatar,
+  Calendar,
+  Badge,
+  Progress,
+  List,
+  message,
 } from "antd";
-import { useState } from "react";
+import {
+  CalendarOutlined,
+  TeamOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import api from "../../api";
 
-const { Header, Sider, Content } = Layout;
+/* ================== COMPONENT ================== */
 
-const DashBoardPage = () => {
-  const [selectedMenu, setSelectedMenu] = useState("1");
+const DashBoardPage: React.FC = () => {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [upcoming, setUpcoming] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    newPatients: 0,
+    doctors: 0,
+    completedThisMonth: 0,
+  });
 
-  // Dữ liệu mẫu cho lịch hẹn — chuyên khoa mắt
-  const appointments = [
-    {
-      key: "1",
-      patient: "Nguyễn Minh An",
-      doctor: "BS. Trần Hữu Tầm",
-      time: "09:00 - 29/11/2025",
-      department: "Khúc xạ",
-      status: "confirmed",
-    },
-    {
-      key: "2",
-      patient: "Lê Thị Hoa",
-      doctor: "BS. Nguyễn Bích Ngọc",
-      time: "10:30 - 29/11/2025",
-      department: "Nhãn nhi",
-      status: "pending",
-    },
-    {
-      key: "3",
-      patient: "Trần Quốc Phong",
-      doctor: "BS. Phạm Minh Đức",
-      time: "14:00 - 29/11/2025",
-      department: "Đáy mắt",
-      status: "completed",
-    },
-    {
-      key: "4",
-      patient: "Phạm Thu Uyên",
-      doctor: "BS. Lâm Khánh Vy",
-      time: "15:30 - 29/11/2025",
-      department: "Glaucoma",
-      status: "cancelled",
-    },
-  ];
+  /* ================== FETCH DATA ================== */
+
+  const fetchDashboard = async () => {
+    try {
+      const [appointmentRes, doctorRes, patientRes] = await Promise.all([
+        api.get("/appointments"),
+        api.get("/doctors"),
+        api.get("/patients"),
+      ]);
+
+      const appointmentsData = appointmentRes.data.data || [];
+      const doctorsData = doctorRes.data.data || [];
+      const patientsData = patientRes.data.data || [];
+
+      const today = dayjs().format("YYYY-MM-DD");
+
+      // ===== STATS =====
+      setStats({
+        todayAppointments: appointmentsData.filter(
+          (a: any) => dayjs(a.dateTime).format("YYYY-MM-DD") === today
+        ).length,
+        newPatients: patientsData.length,
+        doctors: doctorsData.length,
+        completedThisMonth: appointmentsData.filter(
+          (a: any) =>
+            a.status === "Completed" &&
+            dayjs(a.dateTime).isSame(dayjs(), "month")
+        ).length,
+      });
+
+      // ===== TABLE RECENT =====
+      setAppointments(
+        appointmentsData.slice(0, 5).map((a: any) => ({
+          key: a._id,
+          patient: a.patient?.fullName,
+          doctor: a.doctor?.name,
+          time: `${a.time} - ${dayjs(a.dateTime).format("DD/MM/YYYY")}`,
+          department: a.doctor?.specialty,
+          status: a.status,
+        }))
+      );
+
+      // ===== UPCOMING =====
+      setUpcoming(
+        appointmentsData
+          .filter((a: any) => dayjs(a.dateTime).isAfter(dayjs()))
+          .slice(0, 5)
+          .map((a: any) => ({
+            name: a.patient?.fullName,
+            time: a.time,
+            doctor: a.doctor?.name,
+          }))
+      );
+    } catch {
+      message.error("Không tải được dữ liệu dashboard");
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  /* ================== TABLE ================== */
 
   const columns = [
     {
       title: "Bệnh nhân",
-      dataIndex: "patient",
-      key: "patient",
-      render: (text) => (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      render: (_: any, r: any) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Avatar icon={<UserOutlined />} />
-          <span>{text}</span>
+          {r.patient}
         </div>
       ),
     },
-    { title: "Bác sĩ", dataIndex: "doctor", key: "doctor" },
-    { title: "Thời gian", dataIndex: "time", key: "time" },
-    { title: "Chuyên khoa", dataIndex: "department", key: "department" },
+    { title: "Bác sĩ", dataIndex: "doctor" },
+    { title: "Thời gian", dataIndex: "time" },
+    { title: "Chuyên khoa", dataIndex: "department" },
     {
       title: "Trạng thái",
-      key: "status",
       dataIndex: "status",
-      render: (status) => {
-        const statusConfig = {
-          confirmed: { color: "green", text: "Đã xác nhận" },
-          pending: { color: "orange", text: "Chờ xác nhận" },
-          completed: { color: "blue", text: "Hoàn thành" },
-          cancelled: { color: "red", text: "Đã hủy" },
+      render: (status: string) => {
+        const map: any = {
+          Pending: { color: "orange", text: "Chờ xác nhận" },
+          Confirmed: { color: "green", text: "Đã xác nhận" },
+          Completed: { color: "blue", text: "Hoàn thành" },
+          Cancelled: { color: "red", text: "Đã huỷ" },
         };
-        return (
-          <Tag color={statusConfig[status].color}>
-            {statusConfig[status].text}
-          </Tag>
-        );
+        return <Tag color={map[status]?.color}>{map[status]?.text}</Tag>;
       },
     },
   ];
 
-  const upcomingAppointments = [
-    { name: "Nguyễn Minh An", time: "09:00", doctor: "BS. Trần Hữu Tầm" },
-    { name: "Lê Thị Hoa", time: "10:30", doctor: "BS. Nguyễn Bích Ngọc" },
-    { name: "Trần Quốc Phong", time: "14:00", doctor: "BS. Phạm Minh Đức" },
-  ];
+  /* ================== CALENDAR ================== */
 
-  const getListData = (value) => {
-    const date = value.date();
-    if (date === 29 || date === 30) {
-      return [
-        { type: "success", content: `${date === 29 ? "5" : "3"} lịch hẹn` },
-      ];
-    }
-    return [];
-  };
+  const dateCellRender = (value: any) => {
+    const count = appointments.filter(
+      (a) => dayjs(a.time.split(" - ")[1], "DD/MM/YYYY").date() === value.date()
+    ).length;
 
-  const dateCellRender = (value) => {
-    const listData = getListData(value);
-    return (
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {listData.map((item, index) => (
-          <li key={index}>
-            <Badge status={item.type} text={item.content} />
-          </li>
-        ))}
-      </ul>
-    );
+    return count ? <Badge status="success" text={`${count} lịch hẹn`} /> : null;
   };
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      {/* SIDEBAR */}
-      <Sider
-        breakpoint="lg"
-        collapsedWidth="0"
-        style={{ background: "#0EA5E9" }}
-      >
-        <div
-          style={{
-            height: "64px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: "20px",
-            fontWeight: "bold",
-          }}
-        >
-          <EyeOutlined style={{ fontSize: "26px", marginRight: "8px" }} />
-          VisionCare
-        </div>
+    <>
+      {/* ===== STATISTIC ===== */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Lịch hẹn hôm nay"
+              value={stats.todayAppointments}
+              prefix={<CalendarOutlined />}
+            />
+          </Card>
+        </Col>
 
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[selectedMenu]}
-          onClick={({ key }) => setSelectedMenu(key)}
-          style={{ background: "#0284C7" }}
-          items={[
-            {
-              key: "1",
-              icon: <DashboardOutlined />,
-              label: "Tổng quan",
-            },
-            {
-              key: "2",
-              icon: <CalendarOutlined />,
-              label: "Lịch hẹn",
-            },
-            {
-              key: "3",
-              icon: <UserOutlined />,
-              label: "Bệnh nhân",
-            },
-            {
-              key: "4",
-              icon: <TeamOutlined />,
-              label: "Bác sĩ",
-            },
-          ]}
-        />
-      </Sider>
+        <Col xs={24} md={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Bệnh nhân"
+              value={stats.newPatients}
+              prefix={<UserOutlined />}
+            />
+          </Card>
+        </Col>
 
-      {/* MAIN */}
-      <Layout>
-        {/* HEADER */}
-        <Header
-          style={{
-            padding: "0 24px",
-            background: "#fff",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h2 style={{ margin: 0, color: "#0369A1" }}>
-            Dashboard Phòng Khám Mắt
-          </h2>
+        <Col xs={24} md={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Bác sĩ"
+              value={stats.doctors}
+              prefix={<TeamOutlined />}
+            />
+          </Card>
+        </Col>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <ClockCircleOutlined style={{ fontSize: "16px" }} />
-            <span>Hôm nay: 29/11/2025</span>
-          </div>
-        </Header>
+        <Col xs={24} md={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Ca khám hoàn thành"
+              value={stats.completedThisMonth}
+              prefix={<CheckCircleOutlined />}
+              suffix="tháng"
+            />
+          </Card>
+        </Col>
+      </Row>
 
-        <Content
-          style={{ margin: "24px 16px", padding: 24, background: "#f0f2f5" }}
-        >
-          {/* THỐNG KÊ */}
-          <Row gutter={16} style={{ marginBottom: "24px" }}>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Lịch hẹn hôm nay"
-                  value={12}
-                  prefix={<CalendarOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Bệnh nhân mới"
-                  value={8}
-                  prefix={<UserOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Bác sĩ mắt"
-                  value={12}
-                  prefix={<TeamOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Ca khám hoàn thành"
-                  value={156}
-                  prefix={<CheckCircleOutlined />}
-                  suffix="tháng này"
-                />
-              </Card>
-            </Col>
-          </Row>
+      <Row gutter={16}>
+        {/* ===== LEFT ===== */}
+        <Col xs={24} lg={16}>
+          <Card title="Lịch hẹn gần đây" style={{ marginBottom: 16 }}>
+            <Table
+              columns={columns}
+              dataSource={appointments}
+              pagination={false}
+            />
+          </Card>
 
-          <Row gutter={16}>
-            {/* BẢNG LỊCH HẸN */}
-            <Col xs={24} lg={16}>
-              <Card title="Lịch hẹn gần đây" style={{ marginBottom: "16px" }}>
-                <Table
-                  columns={columns}
-                  dataSource={appointments}
-                  pagination={{ pageSize: 5 }}
-                />
-              </Card>
+          <Card title="Tỷ lệ hoàn thành (demo)">
+            <Progress percent={90} />
+            <Progress percent={85} />
+            <Progress percent={78} />
+          </Card>
+        </Col>
 
-              {/* TỶ LỆ */}
-              <Card title="Tỷ lệ hoàn thành theo chuyên khoa">
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <div style={{ marginBottom: "12px" }}>
-                      <div>Khúc xạ</div>
-                      <Progress percent={90} status="active" />
-                    </div>
-                  </Col>
+        {/* ===== RIGHT ===== */}
+        <Col xs={24} lg={8}>
+          <Card title="Lịch hẹn sắp tới" style={{ marginBottom: 16 }}>
+            <List
+              dataSource={upcoming}
+              renderItem={(item) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={<Avatar icon={<UserOutlined />} />}
+                    title={item.name}
+                    description={
+                      <>
+                        <div>
+                          <ClockCircleOutlined /> {item.time}
+                        </div>
+                        <div>{item.doctor}</div>
+                      </>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
 
-                  <Col span={12}>
-                    <div style={{ marginBottom: "12px" }}>
-                      <div>Đáy mắt</div>
-                      <Progress percent={85} status="active" />
-                    </div>
-                  </Col>
-
-                  <Col span={12}>
-                    <div style={{ marginBottom: "12px" }}>
-                      <div>Nhãn nhi</div>
-                      <Progress percent={78} />
-                    </div>
-                  </Col>
-
-                  <Col span={12}>
-                    <div style={{ marginBottom: "12px" }}>
-                      <div>Glaucoma</div>
-                      <Progress percent={88} />
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-            </Col>
-
-            {/* LỊCH SẮP TỚI + CALENDAR */}
-            <Col xs={24} lg={8}>
-              <Card title="Lịch hẹn sắp tới" style={{ marginBottom: "16px" }}>
-                <List
-                  itemLayout="horizontal"
-                  dataSource={upcomingAppointments}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={<Avatar icon={<UserOutlined />} />}
-                        title={item.name}
-                        description={
-                          <>
-                            <div>
-                              <ClockCircleOutlined /> {item.time}
-                            </div>
-                            <div>{item.doctor}</div>
-                          </>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
-
-              <Card title="Lịch tháng này">
-                <Calendar fullscreen={false} dateCellRender={dateCellRender} />
-              </Card>
-            </Col>
-          </Row>
-        </Content>
-      </Layout>
-    </Layout>
+          <Card title="Lịch tháng">
+            <Calendar fullscreen={false} dateCellRender={dateCellRender} />
+          </Card>
+        </Col>
+      </Row>
+    </>
   );
 };
 
