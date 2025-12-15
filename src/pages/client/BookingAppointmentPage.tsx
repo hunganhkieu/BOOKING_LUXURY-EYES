@@ -17,7 +17,7 @@ import { useAppSelector } from "../../app/hook";
 import {
   useCreateBookingMutation,
   useGetBookingByScheduleIdQuery,
-} from "../../app/services/bookingApi";
+} from "../../app/services/appointmentApi";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
 import {
   useCreatePatientProfileMutation,
@@ -41,6 +41,7 @@ import type {
   SelectedSchedule,
   TimeSlot,
 } from "../../types/Schedule";
+import type { AppointmentStatus } from "./AppointmentHistoryPage";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
@@ -293,7 +294,7 @@ const BookingAppointmentPage = () => {
         time: selectedSchedule?.time ?? "",
         blockTime: 30,
         location: selectedSchedule?.location ?? "",
-        status: "Pending",
+        status: "PENDING" as AppointmentStatus,
         appointmentMethod: "DIRECT",
         symptoms: symptoms,
         payment: {
@@ -324,12 +325,16 @@ const BookingAppointmentPage = () => {
             PatientProData.find((p) => p._id === selectedPerson)?.gender ??
             user?.gender ??
             "",
+          phone:
+            PatientProData.find((p) => p._id === selectedPerson)?.phone ??
+            user?.phone ??
+            "",
         },
       };
       if (!confirm("Xác nhận đặt lịch khám!")) return false;
 
       await createBooking(payload);
-      message.success("Đặt lịch thành công!")
+      message.success("Đặt lịch thành công!");
       nav("/lich-kham");
     } catch (error) {
       console.log(error);
@@ -621,15 +626,17 @@ const BookingAppointmentPage = () => {
                   {/* Symptoms */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vấn đề sức khỏe gặp phải *
+                      Vấn đề gặp phải
                     </label>
                     <TextArea
                       rows={4}
+                      maxLength={255}
+                      showCount
                       placeholder="Mô tả ngắn gọn triệu chứng..."
                       value={symptoms}
                       onChange={(e) => setSymptoms(e.target.value)}
                     />
-                    <div className="flex items-center justify-between mt-1">
+                    {/* <div className="flex items-center justify-between mt-1">
                       <Button
                         type="link"
                         size="small"
@@ -640,7 +647,7 @@ const BookingAppointmentPage = () => {
                       <span className="text-xs text-gray-500">
                         Tối đa 3 ảnh
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Confirm Button */}

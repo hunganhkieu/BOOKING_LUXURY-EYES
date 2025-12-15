@@ -10,14 +10,18 @@ import {
 import { Layout, Menu } from "antd";
 import React from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../app/hook";
+import { logout } from "../app/features/authSlice";
 
 const { Header, Sider, Content } = Layout;
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
 
   const handleLogout = () => {
+    dispatch(logout());
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
     navigate("/auth/login");

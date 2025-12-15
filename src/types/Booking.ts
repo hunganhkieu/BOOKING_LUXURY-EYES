@@ -1,3 +1,5 @@
+import type { AppointmentStatus } from "../pages/client/AppointmentHistoryPage";
+
 export interface BookingPayload {
   scheduleId: string;
   scheduleSlotId: number;
@@ -5,7 +7,7 @@ export interface BookingPayload {
   time: string;
   blockTime: number;
   location: string;
-  status: string;
+  status: AppointmentStatus;
   appointmentMethod: string;
   symptoms: string;
   payment: {
@@ -27,9 +29,13 @@ export interface BookingPayload {
     fullName: string;
     dateOfBirth: string;
     gender: string;
+    phone: string;
   };
 }
 
+export interface Appointment extends BookingPayload {
+  _id?: string;
+}
 export interface BookingResponse {
   success: boolean;
   data: BookingPayload[];

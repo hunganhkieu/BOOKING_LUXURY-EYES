@@ -11,239 +11,189 @@ import {
   SyncOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Button, Card, Input, Modal, Select, Tabs, Tag } from "antd";
+import {
+  Avatar,
+  Button,
+  Card,
+  Input,
+  message,
+  Modal,
+  Select,
+  Tabs,
+  Tag,
+} from "antd";
+import dayjs from "dayjs";
 import { useState } from "react";
+import { useGetAppointmentsQuery } from "../../app/services/appointmentApi";
+import type { Appointment } from "../../types/Booking";
+import { Link } from "react-router-dom";
 
 const { TextArea } = Input;
 
-type AppointmentStatus =
-  | "Pending"
-  | "Confirmed"
-  | "Checkin"
-  | "Done"
-  | "Canceled";
+export type AppointmentStatus =
+  | "PENDING"
+  | "CONFIRM"
+  | "CHECKIN"
+  | "DONE"
+  | "CANCELED";
 
-interface Appointment {
-  id: string;
-  code: string;
-  doctorName: string;
-  specialty: string;
-  date: string;
-  time: string;
-  location: string;
-  room: string;
-  status: AppointmentStatus;
-  price: string;
-  patientName: string;
-  phone: string;
-  reason?: string;
-}
+// interface Appointment {
+//   id: string;
+//   code: string;
+//   doctorName: string;
+//   specialty: string;
+//   date: string;
+//   time: string;
+//   location: string;
+//   room: string;
+//   status: AppointmentStatus;
+//   price: string;
+//   patientName: string;
+//   phone: string;
+//   reason?: string;
+// }
 
 const AppointmentHistoryPage = () => {
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [searchText, setSearchText] = useState<string>("");
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("all"); // tab đang được chọn
+  const [searchText, setSearchText] = useState<string>(""); // tìm kiếm
+  // bấm xem chi tiết, hủy lịch
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+
+  // quản lý modal
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState<string>("");
+  const [otherReason, setOtherReason] = useState<string>("");
 
-  const appointments: Appointment[] = [
-    {
-      id: "1",
-      code: "BV2024112801",
-      doctorName: "TS Vũ Việt Hằng",
-      specialty: "Y học cổ truyền",
-      date: "28/11/2024",
-      time: "08:30",
-      location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-      room: "Phòng 203, Tầng 2, Nhà A5",
-      status: "Pending",
-      price: "350.000",
-      patientName: "Nguyễn Văn A",
-      phone: "0123456789",
-      reason: "Đau đầu, mệt mỏi",
+  const { data, isLoading, isError } = useGetAppointmentsQuery();
+  const getAppointments: Appointment[] = data?.data ?? [];
+
+  // màu tag, icon, text hiển thị
+  const appointmentStatus = {
+    PENDING: {
+      color: "orange",
+      bgColor: "bg-orange-50",
+      text: "Chờ xác nhận",
+      icon: <ClockCircleOutlined />,
     },
-    {
-      id: "2",
-      code: "BV2024112701",
-      doctorName: "ThsBS Vũ Văn Tiến",
-      specialty: "Tai mũi họng",
-      date: "27/11/2024",
-      time: "14:00",
-      location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-      room: "Phòng 105, Tầng 1, Nhà B3",
-      status: "Confirmed",
-      price: "350.000",
-      patientName: "Nguyễn Văn A",
-      phone: "0123456789",
-      reason: "Viêm amidan",
+    CONFIRM: {
+      color: "blue",
+      bgColor: "bg-blue-50",
+      text: "Đã xác nhận",
+      icon: <CheckCircleOutlined />,
     },
-    {
-      id: "3",
-      code: "BV2024112601",
-      doctorName: "ThsBSNT Vũ Trung Hải",
-      specialty: "Ngoại Thần kinh - Cột sống",
-      date: "26/11/2024",
-      time: "09:00",
-      location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-      room: "Phòng 301, Tầng 3, Nhà C1",
-      status: "Checkin",
-      price: "120.000",
-      patientName: "Nguyễn Văn A",
-      phone: "0123456789",
-      reason: "Đau lưng",
+    CHECKIN: {
+      color: "purple",
+      bgColor: "bg-purple-50",
+      text: "Đã check-in",
+      icon: <SyncOutlined />,
     },
-    {
-      id: "4",
-      code: "BV2024112501",
-      doctorName: "ThsBS Vũ Trọng Tùng",
-      specialty: "Bác sỹ gia đình",
-      date: "25/11/2024",
-      time: "10:30",
-      location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-      room: "Phòng 102, Tầng 1, Nhà A5",
-      status: "Done",
-      price: "120.000",
-      patientName: "Nguyễn Văn A",
-      phone: "0123456789",
-      reason: "Khám sức khỏe định kỳ",
+    DONE: {
+      color: "green",
+      bgColor: "bg-green-50",
+      text: "Hoàn thành",
+      icon: <CheckCircleOutlined />,
     },
-    {
-      id: "5",
-      code: "BV2024112401",
-      doctorName: "BSCKII Vũ Thu Phương",
-      specialty: "Da liễu",
-      date: "24/11/2024",
-      time: "15:30",
-      location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-      room: "Phòng 205, Tầng 2, Nhà B3",
-      status: "Canceled",
-      price: "350.000",
-      patientName: "Nguyễn Văn A",
-      phone: "0123456789",
-      reason: "Dị ứng da",
+    CANCELED: {
+      color: "red",
+      bgColor: "bg-red-50",
+      text: "Đã hủy",
+      icon: <CloseCircleOutlined />,
     },
-  ];
+  } as const;
 
   const getStatusConfig = (status: AppointmentStatus) => {
-    const configs = {
-      Pending: {
-        color: "orange",
-        text: "Chờ xác nhận",
-        icon: <ClockCircleOutlined />,
-        bgColor: "bg-orange-50",
-        textColor: "text-orange-600",
-      },
-      Confirmed: {
-        color: "blue",
-        text: "Đã xác nhận",
-        icon: <CheckCircleOutlined />,
-        bgColor: "bg-blue-50",
-        textColor: "text-blue-600",
-      },
-      Checkin: {
-        color: "purple",
-        text: "Đã check-in",
-        icon: <SyncOutlined />,
-        bgColor: "bg-purple-50",
-        textColor: "text-purple-600",
-      },
-      Done: {
-        color: "green",
-        text: "Hoàn thành",
-        icon: <CheckCircleOutlined />,
-        bgColor: "bg-green-50",
-        textColor: "text-green-600",
-      },
-      Canceled: {
-        color: "red",
-        text: "Đã hủy",
-        icon: <CloseCircleOutlined />,
-        bgColor: "bg-red-50",
-        textColor: "text-red-600",
-      },
-    };
-    return configs[status];
+    return appointmentStatus[status];
   };
 
+  // lọc danh sách
   const filterAppointments = (status?: AppointmentStatus) => {
-    let filtered = appointments;
+    let filtered = getAppointments;
 
+    // lọc theo trạng thái
     if (status) {
       filtered = filtered.filter((apt) => apt.status === status);
     }
 
-    if (searchText) {
-      filtered = filtered.filter(
-        (apt) =>
-          apt.code.toLowerCase().includes(searchText.toLowerCase()) ||
-          apt.doctorName.toLowerCase().includes(searchText.toLowerCase()) ||
-          apt.specialty.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
+    // lọc theo ô tìm kiếm
+    // if (searchText) {
+    //   filtered = filtered.filter(
+    //     (apt) =>
+    //       apt._id.toLowerCase().includes(searchText.toLowerCase()) ||
+    //       apt.doctor.name.toLowerCase().includes(searchText.toLowerCase())
+    //   );
+    // }
 
     return filtered;
   };
 
+  // xem chi tiết lịch hẹn
   const handleViewDetail = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
+
     setDetailModalVisible(true);
   };
 
+  // đóng chi tiết lịch hẹn
   const handleCancelAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setCancelModalVisible(true);
   };
 
+  // hủy lịch
   const confirmCancel = () => {
-    console.log(
-      "Cancel appointment:",
-      selectedAppointment?.id,
-      "Reason:",
-      cancelReason
-    );
+    if (!cancelReason) {
+      message.error("Bạn phải chọn lý do hủy lịch");
+      return;
+    }
+
+    if (cancelReason === "other" && !otherReason.trim()) {
+      message.error("Vui lòng nhâp lý do hủy lịch");
+      return;
+    }
     setCancelModalVisible(false);
     setCancelReason("");
   };
-
+  // lọc theo trạng thái
   const tabItems = [
     {
       key: "all",
-      label: `Tất cả (${appointments.length})`,
+      label: `Tất cả (${getAppointments.length})`,
     },
     {
-      key: "Pending",
+      key: "PENDING",
       label: `Chờ xác nhận (${
-        appointments.filter((a) => a.status === "Pending").length
+        getAppointments.filter((a) => a.status === "PENDING").length
       })`,
     },
     {
-      key: "Confirmed",
+      key: "CONFIRM",
       label: `Đã xác nhận (${
-        appointments.filter((a) => a.status === "Confirmed").length
+        getAppointments.filter((a) => a.status === "CONFIRM").length
       })`,
     },
     {
-      key: "Checkin",
+      key: "CHECKIN",
       label: `Đã check-in (${
-        appointments.filter((a) => a.status === "Checkin").length
+        getAppointments.filter((a) => a.status === "CHECKIN").length
       })`,
     },
     {
-      key: "Done",
+      key: "DONE",
       label: `Hoàn thành (${
-        appointments.filter((a) => a.status === "Done").length
+        getAppointments.filter((a) => a.status === "DONE").length
       })`,
     },
     {
-      key: "Canceled",
+      key: "CANCELED",
       label: `Đã hủy (${
-        appointments.filter((a) => a.status === "Canceled").length
+        getAppointments.filter((a) => a.status === "CANCELED").length
       })`,
     },
   ];
 
+  // tab tất cả chỉ search --- tab khác lọc status + search
   const getFilteredAppointments = () => {
     if (activeTab === "all") {
       return filterAppointments();
@@ -251,8 +201,12 @@ const AppointmentHistoryPage = () => {
     return filterAppointments(activeTab as AppointmentStatus);
   };
 
+  if (isLoading) return <div className="text-center mt-3">Loading...</div>;
+  if (isError)
+    return <div className="text-center mt-3">Error loading doctors</div>;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 my-4">
       <div className="max-w-7xl mx-auto px-4 mt-4">
         {/* Page Title */}
         <div className="mb-6">
@@ -297,11 +251,11 @@ const AppointmentHistoryPage = () => {
               <p className="text-gray-500">Không có lịch khám nào</p>
             </Card>
           ) : (
-            getFilteredAppointments().map((appointment) => {
+            getFilteredAppointments()?.map((appointment: Appointment) => {
               const statusConfig = getStatusConfig(appointment.status);
               return (
                 <Card
-                  key={appointment.id}
+                  key={appointment._id}
                   className="shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col lg:flex-row gap-4">
@@ -313,15 +267,15 @@ const AppointmentHistoryPage = () => {
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="text-lg font-semibold text-gray-800">
-                                {appointment.doctorName}
+                                {appointment.doctor.name}
                               </h3>
                               <p className="text-sm text-blue-600">
-                                {appointment.specialty}
+                                {appointment.room.name}
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
                                 Mã phiếu:{" "}
                                 <span className="font-semibold">
-                                  {appointment.code}
+                                  {appointment._id?.slice(-6).toUpperCase()}
                                 </span>
                               </p>
                             </div>
@@ -338,7 +292,10 @@ const AppointmentHistoryPage = () => {
                             <div className="flex items-center gap-2 text-sm">
                               <CalendarOutlined className="text-gray-400" />
                               <span>
-                                {appointment.date} - {appointment.time}
+                                {dayjs(appointment.dateTime).format(
+                                  "YYYY-MM-DD"
+                                )}{" "}
+                                - {appointment.time}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
@@ -349,12 +306,12 @@ const AppointmentHistoryPage = () => {
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <UserOutlined className="text-gray-400" />
-                              <span>{appointment.patientName}</span>
+                              <span>{appointment.patient.fullName}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-gray-400">💰</span>
                               <span className="font-semibold text-orange-600">
-                                {appointment.price} đ
+                                {appointment.payment.totalAmount} đ
                               </span>
                             </div>
                           </div>
@@ -372,8 +329,8 @@ const AppointmentHistoryPage = () => {
                       >
                         Chi tiết
                       </Button>
-                      {(appointment.status === "Pending" ||
-                        appointment.status === "Confirmed") && (
+                      {(appointment.status === "PENDING" ||
+                        appointment.status === "CONFIRM") && (
                         <Button
                           danger
                           icon={<CloseCircleOutlined />}
@@ -383,10 +340,19 @@ const AppointmentHistoryPage = () => {
                           Hủy lịch
                         </Button>
                       )}
-                      {appointment.status === "Done" && (
-                        <Button icon={<FileTextOutlined />} block>
-                          Xem kết quả
-                        </Button>
+                      {appointment.status === "DONE" && (
+                        <Link to={"/dat-lich-kham"}>
+                          <Button icon={<CalendarOutlined />} block>
+                            Đặt lịch khám mới
+                          </Button>
+                        </Link>
+                      )}
+                      {appointment.status === "CANCELED" && (
+                        <Link to={"/dat-lich-kham"}>
+                          <Button icon={<CalendarOutlined />} block>
+                            Đặt lại
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -436,19 +402,21 @@ const AppointmentHistoryPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Họ và tên:</span>
                   <span className="font-medium">
-                    {selectedAppointment.patientName}
+                    {selectedAppointment.patient.fullName}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Số điện thoại:</span>
                   <span className="font-medium">
-                    {selectedAppointment.phone}
+                    {selectedAppointment.patient.phone}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Mã phiếu:</span>
                   <span className="font-medium">
-                    {selectedAppointment.code}
+                    {`${selectedAppointment._id?.slice(
+                      -4
+                    )}-${selectedAppointment.scheduleId.slice(-2)}`}
                   </span>
                 </div>
               </div>
@@ -462,19 +430,20 @@ const AppointmentHistoryPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Bác sĩ:</span>
                   <span className="font-medium">
-                    {selectedAppointment.doctorName}
+                    {selectedAppointment.doctor.name}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Chuyên khoa:</span>
+                  <span className="text-gray-600">Kinh nghiệm:</span>
                   <span className="font-medium">
-                    {selectedAppointment.specialty}
+                    {selectedAppointment.doctor.experience_year} năm
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Thời gian:</span>
                   <span className="font-medium">
-                    {selectedAppointment.time} - {selectedAppointment.date}
+                    {selectedAppointment.time} -{" "}
+                    {dayjs(selectedAppointment.dateTime).format("YYYY-MM-DD")}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -486,16 +455,16 @@ const AppointmentHistoryPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Phòng khám:</span>
                   <span className="font-medium">
-                    {selectedAppointment.room}
+                    {selectedAppointment.room.name}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="border-b pb-3">
+            <div className="flex flex-wrap justify-between border-b pb-3">
               <h4 className="font-semibold text-gray-700 mb-2">Lý do khám</h4>
-              <p className="text-sm text-gray-600">
-                {selectedAppointment.reason}
+              <p className="text-sm text-gray-600 line-clamp-3">
+                {selectedAppointment?.symptoms || "Không có"}
               </p>
             </div>
 
@@ -505,7 +474,7 @@ const AppointmentHistoryPage = () => {
                   Tổng chi phí:
                 </span>
                 <span className="text-xl font-bold text-orange-600">
-                  {selectedAppointment.price} đ
+                  {selectedAppointment.payment.totalAmount} đ
                 </span>
               </div>
             </div>
@@ -523,8 +492,12 @@ const AppointmentHistoryPage = () => {
           setCancelReason("");
         }}
         okText="Xác nhận hủy"
+        okButtonProps={{
+          danger: true,
+          disabled:
+            !cancelReason || (cancelReason === "other" && !otherReason.trim()),
+        }}
         cancelText="Đóng"
-        okButtonProps={{ danger: true }}
       >
         {selectedAppointment && (
           <div className="space-y-4">
@@ -533,12 +506,12 @@ const AppointmentHistoryPage = () => {
               <div className="flex-1 text-sm">
                 <p className="font-semibold text-red-800 mb-1">Lưu ý:</p>
                 <p className="text-red-600">
-                  Bạn có chắc chắn muốn hủy lịch khám với{" "}
-                  <strong>{selectedAppointment.doctorName}</strong> vào lúc{" "}
+                  Bạn có chắc chắn muốn hủy lịch khám với bác sĩ{" "}
+                  <strong> {selectedAppointment.doctor.name}</strong> vào lúc{" "}
                   <strong>
-                    {selectedAppointment.time} - {selectedAppointment.date}
+                    {selectedAppointment.time} -{" "}
+                    {dayjs(selectedAppointment.dateTime).format("YYYY-MM-DD")}
                   </strong>
-                  ?
                 </p>
               </div>
             </div>
@@ -570,6 +543,8 @@ const AppointmentHistoryPage = () => {
                 rows={3}
                 placeholder="Nhập lý do hủy lịch..."
                 className="w-full"
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
               />
             )}
           </div>

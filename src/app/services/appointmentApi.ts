@@ -2,16 +2,22 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 import { createApi } from "@reduxjs/toolkit/query/react";
 import type { BookingPayload, BookingResponse } from "../../types/Booking";
 
-export const bookingApi = createApi({
-  reducerPath: "bookingApi",
+export const appointmentApi = createApi({
+  reducerPath: "appointmentApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api-class-o1lo.onrender.com/api/luxury_eyes/",
   }),
-  tagTypes: ["Bookings"],
+  tagTypes: ["Appointments", "AppointmentScheduleId"],
   endpoints: (builder) => ({
+    getAppointments: builder.query<BookingResponse, void>({
+      query: () => "appointments",
+      providesTags: ["Appointments"],
+    }),
     getBookingByScheduleId: builder.query<BookingResponse, string>({
       query: (scheduleId) => `appointments?scheduleId=${scheduleId}`,
-      providesTags: ["Bookings"],
+      providesTags: (_result, _error, scheduleId) => [
+        { type: "AppointmentScheduleId", id: scheduleId },
+      ],
     }),
     createBooking: builder.mutation<void, BookingPayload>({
       query: (bookingData) => ({
@@ -19,10 +25,16 @@ export const bookingApi = createApi({
         method: "POST",
         body: bookingData,
       }),
-      invalidatesTags: ["Bookings"],
+      invalidatesTags: (_result, _error, arg) => [
+        "Appointments",
+        { type: "AppointmentScheduleId", id: arg.scheduleId },
+      ],
     }),
   }),
 });
 
-export const { useGetBookingByScheduleIdQuery, useCreateBookingMutation } =
-  bookingApi;
+export const {
+  useGetAppointmentsQuery,
+  useGetBookingByScheduleIdQuery,
+  useCreateBookingMutation,
+} = appointmentApi;
