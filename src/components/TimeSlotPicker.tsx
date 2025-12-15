@@ -1,14 +1,19 @@
 import { CloudOutlined, SunOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 import { getDayLabel } from "../utils/dateUtils";
-import type { DoctorSchedule, TimeSlot } from "../types/Schedule";
+import type {
+  DoctorSchedule,
+  SelectedSchedule,
+  TimeSlot,
+} from "../types/Schedule";
+import dayjs from "dayjs";
 
 interface TimeSlotPickerProps {
   scheduleItem?: DoctorSchedule;
   selectedDate: number | null;
   setSelectedDate: (idx: number) => void;
-  selectedSchedule: TimeSlot | null;
-  handleTimeSelect: (date: string, time: string) => void;
+  selectedSchedule: SelectedSchedule | null;
+  handleTimeSelect: (slot: TimeSlot) => void;
 }
 
 const TimeSlotPicker = ({
@@ -18,15 +23,65 @@ const TimeSlotPicker = ({
   selectedSchedule,
   handleTimeSelect,
 }: TimeSlotPickerProps) => {
-  const morningSlot = scheduleItem?.timeSlots.filter((slot) => {
-    const [hour, minute] = slot.time.split(":").map(Number);
-    return hour <= 12;
-  });
+  // const today = dayjs().startOf("day");
+  // Lọc slot từ hôm nay trở đi
+  // let validTimeSlots =
+  //   scheduleItem?.timeSlots.filter((slot) => {
+  //     const slotDate = dayjs(slot.date).startOf("day");
+  //     return slotDate.isSame(today) || slotDate.isAfter(today);
+  //   }) ?? [];
 
-  const afternoonSlots = scheduleItem?.timeSlots.filter((slot) => {
-    const [hour, minute] = slot.time.split(":").map(Number);
-    return hour >= 13;
-  });
+  let validTimeSlots = scheduleItem?.timeSlots ?? [];
+
+  // SẮP XẾP THEO NGÀY TĂNG DẦN
+  validTimeSlots = validTimeSlots.sort((a, b) =>
+    dayjs(a.date).diff(dayjs(b.date))
+  );
+
+  // Tạo danh sách các ngày DUY NHẤT
+  const uniqueDateSlots = Array.from(
+    validTimeSlots
+      .reduce((map, slot) => {
+        const key = dayjs(slot.date).format("YYYY-MM-DD");
+        if (!map.has(key)) map.set(key, slot); // giữ slot đầu tiên của ngày đó
+        return map;
+      }, new Map<string, TimeSlot>())
+      .values()
+  );
+
+  // Xác định ngày được chọn (dựa trên index trong uniqueDateSlots)
+  const selectedSlot =
+    selectedDate !== null ? uniqueDateSlots[selectedDate] : null;
+  const selectedDay = selectedSlot
+    ? dayjs(selectedSlot.date).startOf("day")
+    : null;
+
+  // Lấy tất cả slot của ngày đã chọn + loại bỏ trùng giờ + SẮP XẾP THEO GIỜ
+  const slotsOfSelectedDay = selectedDay
+    ? Array.from(
+        validTimeSlots
+          .filter((slot) => dayjs(slot.date).startOf("day").isSame(selectedDay))
+          .reduce((map, slot) => {
+            const key = slot.time; // deduplicate theo giờ
+            if (!map.has(key)) {
+              map.set(key, slot);
+            }
+            return map;
+          }, new Map<string, TimeSlot>())
+          .values() // values() trả về Iterator
+      )
+        // Sắp xếp giờ tăng dần
+        .sort((a, b) => a.time.localeCompare(b.time))
+    : [];
+
+  // Chia sáng / chiều
+  const morningSlots = slotsOfSelectedDay.filter(
+    (slot) => parseInt(slot.time.split(":")[0]) < 12
+  );
+
+  const afternoonSlots = slotsOfSelectedDay.filter(
+    (slot) => parseInt(slot.time.split(":")[0]) >= 12
+  );
   return (
     <div>
       <div className="mb-4">
@@ -34,20 +89,23 @@ const TimeSlotPicker = ({
           Chọn ngày khám:
         </label>
         <div className="grid grid-cols-4 gap-2">
-          {scheduleItem ? (
-            scheduleItem.timeSlots.map((slot, idx) => {
+          {uniqueDateSlots.length > 0 ? (
+            uniqueDateSlots?.map((slot, idx) => {
               const dayLabel = getDayLabel(slot.date);
               const dayDate = new Date(slot.date).toLocaleDateString("vi-VN", {
                 day: "2-digit",
                 month: "2-digit",
               });
 
+              const isSelected = selectedDay?.isSame(
+                dayjs(slot.date).startOf("day")
+              );
               return (
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(idx)}
                   className={`px-3 py-3 rounded-lg border-2 transition-all ${
-                    selectedDate === idx
+                    isSelected
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-700 border-gray-300 hover:border-blue-500"
                   }`}
@@ -64,55 +122,73 @@ const TimeSlotPicker = ({
           )}
         </div>
 
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <SunOutlined className="text-yellow-500" />
-            <span className="font-semibold">Sáng</span>
-          </div>
+        {selectedDay ? (
+          <>
+            {/* Sáng */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <SunOutlined className="text-yellow-500" />
+                <span className="font-semibold">Sáng</span>
+              </div>
 
-          {morningSlot && morningSlot?.length > 0 ? (
-            <div className="grid grid-cols-5 gap-2">
-              {morningSlot.map((slot) => (
-                <Button
-                  key={slot.scheduleId + slot.time}
-                  type={
-                    selectedSchedule?.time === slot.time ? "primary" : "default"
-                  }
-                  onClick={() => handleTimeSelect(slot.date, slot.time)}
-                >
-                  {slot.time}
-                </Button>
-              ))}
+              {morningSlots.length > 0 ? (
+                <div className="grid grid-cols-5 gap-2">
+                  {morningSlots.map((slot) => (
+                    <Button
+                      key={slot.scheduleSlotId + slot.time}
+                      type={
+                        selectedSchedule &&
+                        selectedSchedule.time === slot.time &&
+                        selectedSchedule.date === slot.date
+                          ? "primary"
+                          : "default"
+                      }
+                      onClick={() => handleTimeSelect(slot)}
+                    >
+                      {slot.time}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Không có khung giờ sáng</p>
+              )}
             </div>
-          ) : (
-            <p>chưa có giờ cụ thể</p>
-          )}
-        </div>
 
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <CloudOutlined className="text-blue-500" />
-            <span className="font-semibold">Chiều</span>
-          </div>
+            {/* Chiều */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <CloudOutlined className="text-blue-500" />
+                <span className="font-semibold">Chiều</span>
+              </div>
 
-          {afternoonSlots && afternoonSlots?.length > 0 ? (
-            <div className="grid grid-cols-5 gap-2">
-              {afternoonSlots.map((slot) => (
-                <Button
-                  key={slot.scheduleId + slot.time}
-                  type={
-                    selectedSchedule?.time === slot.time ? "primary" : "default"
-                  }
-                  onClick={() => handleTimeSelect(slot.date, slot.time)}
-                >
-                  {slot.time}
-                </Button>
-              ))}
+              {afternoonSlots.length > 0 ? (
+                <div className="grid grid-cols-5 gap-2">
+                  {afternoonSlots.map((slot) => (
+                    <Button
+                      key={slot.scheduleSlotId + slot.time}
+                      type={
+                        selectedSchedule &&
+                        selectedSchedule.time === slot.time &&
+                        selectedSchedule.date === slot.date
+                          ? "primary"
+                          : "default"
+                      }
+                      onClick={() => handleTimeSelect(slot)}
+                    >
+                      {slot.time}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Không có khung giờ chiều</p>
+              )}
             </div>
-          ) : (
-            <p>chưa có giờ cụ thể</p>
-          )}
-        </div>
+          </>
+        ) : (
+          <p className="text-center text-gray-500 mt-6">
+            Vui lòng chọn một ngày để xem khung giờ khả dụng
+          </p>
+        )}
       </div>
     </div>
   );

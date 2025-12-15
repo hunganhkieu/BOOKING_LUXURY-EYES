@@ -1,0 +1,36 @@
+export interface BookingPayload {
+  scheduleId: string;
+  scheduleSlotId: number;
+  dateTime: string;
+  time: string;
+  blockTime: number;
+  location: string;
+  status: string;
+  appointmentMethod: string;
+  symptoms: string;
+  payment: {
+    totalAmount: number;
+    paymentMethod: string;
+    paymentStatus: string;
+  };
+  doctor: {
+    id: string;
+    name: string;
+    avatar?: string;
+    experience_year: number;
+  };
+  room: {
+    id: number;
+    name: string;
+  };
+  patient: {
+    fullName: string;
+    dateOfBirth: string;
+    gender: string;
+  };
+}
+
+export interface BookingResponse {
+  success: boolean;
+  data: BookingPayload[];
+}

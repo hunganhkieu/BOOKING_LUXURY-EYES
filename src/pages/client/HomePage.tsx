@@ -6,7 +6,6 @@ import {
 } from "@ant-design/icons";
 import { Badge, Button, Card, Carousel } from "antd";
 import { Link } from "react-router-dom";
-import FooterClient from "../../layouts/FooterClient";
 import { useAppSelector } from "../../app/hook";
 
 const HomePage = () => {
@@ -222,7 +221,6 @@ const HomePage = () => {
           </Link>
         </div>
       </div>
-      <FooterClient />
     </div>
   );
 };

@@ -1,11 +1,11 @@
-import React from "react";
-import { Modal, Input, DatePicker, Radio, Form } from "antd";
 import {
-  UserOutlined,
   IdcardOutlined,
   MailOutlined,
   PhoneOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import { DatePicker, Form, Input, Modal, Radio } from "antd";
+import React from "react";
 
 export interface PatientInput {
   name: string;
@@ -21,15 +21,16 @@ interface AddPatientModalProps {
   visible: boolean;
   onCancel: () => void;
   onSubmit: (data: PatientInput) => void;
+  confirmLoading?: boolean;
 }
 
 const AddPatientModal: React.FC<AddPatientModalProps> = ({
   visible,
   onCancel,
   onSubmit,
+  confirmLoading,
 }) => {
   const [form] = Form.useForm();
-
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
@@ -45,6 +46,7 @@ const AddPatientModal: React.FC<AddPatientModalProps> = ({
       title="Thêm mới người bệnh"
       open={visible}
       onCancel={onCancel}
+      confirmLoading={confirmLoading}
       onOk={handleOk} // <-- chạy validate
       okText="Thêm người bệnh"
       cancelText="Hủy"

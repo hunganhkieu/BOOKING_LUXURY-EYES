@@ -4,13 +4,13 @@ export interface ScheduleResponse {
 
 // Thông tin 1 ca khám
 export interface TimeSlot {
-  scheduleId: number;
+  scheduleSlotId: number;
   date: string;
   time: string;
-  status: "AVAILABLE" | "BOOKED" | "CANCELLED";
-  capacity: number;
-  blockTime: number;
-  roomId: number;
+  status?: "AVAILABLE" | "BOOKED" | "CANCELLED";
+  capacity?: number;
+  blockTime?: number;
+  roomId?: number;
 }
 
 // Thông tin lịch của bác sĩ trong 1 phòng
@@ -21,4 +21,13 @@ export interface DoctorSchedule {
   roomName: string;
   price: number;
   timeSlots: TimeSlot[];
+}
+
+export interface SelectedSchedule {
+  scheduleSlotId: number | string;
+  date: string;
+  time: string;
+  location?: string;
+  room?: string;
+  displayDate?: string;
 }

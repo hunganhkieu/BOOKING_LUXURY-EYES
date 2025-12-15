@@ -14,6 +14,10 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../../app/hook";
+import {
+  useCreateBookingMutation,
+  useGetBookingByScheduleIdQuery,
+} from "../../app/services/bookingApi";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
 import {
   useCreatePatientProfileMutation,
@@ -26,12 +30,17 @@ import {
 import AddPatientModal from "../../components/AddPatientModal";
 import DoctorList from "../../components/DoctorList";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
+import type { BookingPayload } from "../../types/Booking";
 import type { Doctor } from "../../types/Doctor";
 import type {
   CreatePatientInput,
   PatientResponse,
 } from "../../types/PatientProfile";
-import type { DoctorSchedule, Schedule } from "../../types/Schedule";
+import type {
+  DoctorSchedule,
+  SelectedSchedule,
+  TimeSlot,
+} from "../../types/Schedule";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
@@ -44,7 +53,8 @@ const BookingAppointmentPage = () => {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
 
-  const { data, isLoading, isFetching, isError, refetch } = useGetDoctorsQuery({
+  //doctors
+  const { data, isLoading, isFetching, isError } = useGetDoctorsQuery({
     inputSearch: delaySearch,
   });
   const doctors: Doctor[] = useMemo(() => data?.data ?? [], [data]);
@@ -67,8 +77,20 @@ const BookingAppointmentPage = () => {
 
   const [selectedPerson, setSelectedPerson] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
-    null
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedSchedule, setSelectedSchedule] =
+    useState<SelectedSchedule | null>(null);
+
+  // appointment ScheduleId
+  const { data: getBookingBySlotId } = useGetBookingByScheduleIdQuery(
+    scheduleItem?._id,
+    {
+      skip: !scheduleItem?._id,
+    }
+  );
+  const getBookingBySchedIdData = useMemo(
+    () => getBookingBySlotId?.data ?? [],
+    [getBookingBySlotId]
   );
   const [symptoms, setSymptoms] = useState<string>("");
 
@@ -76,43 +98,42 @@ const BookingAppointmentPage = () => {
   const user = useAppSelector((state) => state.auth.user);
   const { data: patientProfileResponse } = useGetPatientProfileQuery();
   const PatientProData: PatientResponse[] = patientProfileResponse?.data ?? [];
-  const [
-    createPatientProfile,
-    // {
-    //   data: createdPatient,
-    //   isLoading: isCreatingPatient,
-    //   isError: isCreateError,
-    // },
-  ] = useCreatePatientProfileMutation();
+  const [createPatientProfile, { isLoading: isCreatingPatient }] =
+    useCreatePatientProfileMutation();
+
+  const [createBooking] = useCreateBookingMutation();
+
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-
-  const initialPatientState = {
-    name: "",
-    dateOfBirth: "",
-    gender: "",
-    identityCard: "",
-    email: "",
-    phone: "",
-    address: "",
-  };
-
-  const [newPatient, setNewPatient] = useState(initialPatientState);
 
   const nav = useNavigate();
 
+  // chọn bác sĩ
   const handleDoctorSelect = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
     setSelectedSchedule(null);
   };
 
-  const handleTimeSelect = (date: string, time: string) => {
-    if (selectedDoctor) {
-      const formattedDate = formatDate(date);
+  //format date
+  const formatDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+  const handleTimeSelect = (slot: TimeSlot) => {
+    if (selectedDoctor && scheduleItem) {
+      const formattedDate = formatDate(slot.date);
+
+      setSelectedSlot(slot);
+
       setSelectedSchedule({
-        date: `${time} - ${formattedDate}`,
-        time: time,
-        location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-        room: scheduleItem?.roomName,
+        scheduleSlotId: slot.scheduleSlotId,
+        date: slot.date,
+        time: slot.time,
+        location: "Vân Canh - Hoài Đức",
+        room: scheduleItem.roomName,
+        displayDate: `${slot.time} - ${formattedDate}`,
       });
     }
   };
@@ -122,6 +143,7 @@ const BookingAppointmentPage = () => {
     setSelectedSchedule(null);
   };
 
+  // gọi form thêm người bệnh
   const handlePatientChange = (value: string) => {
     if (value === "add-new") {
       setShowAddPatientModal(true);
@@ -134,7 +156,6 @@ const BookingAppointmentPage = () => {
   const handleAddPatient = async (values: CreatePatientInput) => {
     try {
       const res = await createPatientProfile(values).unwrap();
-      console.log(res);
       message.success("thêm thành công");
       setSelectedPerson(res.data._id);
       setShowAddPatientModal(false);
@@ -154,14 +175,7 @@ const BookingAppointmentPage = () => {
     setInputSearch("");
   };
 
-  const formatDate = (isoDate: string) => {
-    return new Date(isoDate).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
+  //bắt dữ liệu thay đổi khi chọn ngày
   const handleRangeChange = (
     dates: (Dayjs | null)[] | null
     // dateStrings: [string, string]
@@ -178,10 +192,12 @@ const BookingAppointmentPage = () => {
     }
   };
 
+  // ko chọn ngày trong quá khứ
   const disabledDate = (current: Dayjs) => {
     return current && current < dayjs().startOf("day");
   };
 
+  // lọc bác sĩ theo ngày
   const filteredDoctors = useMemo(() => {
     if (!fromDate || !toDate) {
       return doctors.map((doc) => ({ ...doc, timeSlots: [] }));
@@ -217,11 +233,115 @@ const BookingAppointmentPage = () => {
     return doctorsWithAvailableSlots;
   }, [doctors, listSchedule, fromDate, toDate]);
 
+  // check trùng lịch
+  const availableSlots = useMemo(() => {
+    if (!scheduleItem?.timeSlots || !getBookingBySchedIdData) {
+      return [];
+    }
+
+    const today = dayjs().startOf("day");
+
+    return scheduleItem.timeSlots
+      .filter((slot) => {
+        // Chỉ lấy slot từ hôm nay trở đi
+        const slotDay = dayjs(slot.date).startOf("day");
+        return slotDay.isSame(today) || slotDay.isAfter(today);
+      })
+      .filter((slot) => {
+        // Chỉ lấy slot còn AVAILABLE
+        if (slot.status !== "AVAILABLE") return false;
+
+        const slotDate = dayjs(slot.date).format("YYYY-MM-DD");
+
+        // Kiểm tra đã có appointment nào đặt chưa
+        const isBooked = getBookingBySchedIdData.some((apm: BookingPayload) => {
+          const apmDate = dayjs(apm.dateTime).format("YYYY-MM-DD");
+          return (
+            apmDate === slotDate &&
+            apm.time === slot.time &&
+            ["Pending", "Confirmed", "InProgress", "CheckedIn"].includes(
+              apm.status
+            )
+          );
+        });
+        return !isBooked;
+      });
+  }, [scheduleItem?.timeSlots, getBookingBySchedIdData]);
+
+  //đặt lịch
+  const handleConfirmBooking = async () => {
+    if (!selectedPerson) {
+      message.error("Vui lòng chọn người tới khám");
+      return false;
+    }
+
+    if (!selectedDoctor) {
+      message.error("Vui lòng chọn bác sĩ");
+      return false;
+    }
+
+    if (!selectedSchedule) {
+      message.error("Vui lòng chọn lịch khám");
+      return false;
+    }
+
+    try {
+      const payload = {
+        scheduleId: scheduleItem._id,
+        scheduleSlotId: Number(selectedSchedule.scheduleSlotId) || 0,
+        dateTime: selectedSchedule?.date ?? "",
+        time: selectedSchedule?.time ?? "",
+        blockTime: 30,
+        location: selectedSchedule?.location ?? "",
+        status: "Pending",
+        appointmentMethod: "DIRECT",
+        symptoms: symptoms,
+        payment: {
+          totalAmount: Number(selectedDoctor?.price) || 0,
+          paymentMethod: "PAY_AT_CLINIC",
+          paymentStatus: "UNPAID",
+        },
+        doctor: {
+          id: selectedDoctor?._id ?? "",
+          name: selectedDoctor?.name ?? "",
+          avatar: selectedDoctor?.avatar ?? "",
+          experience_year: Number(selectedDoctor?.experience_year) || 0,
+        },
+        room: {
+          id: scheduleItem.roomId ?? 1,
+          name: scheduleItem.roomName,
+        },
+        patient: {
+          fullName:
+            PatientProData.find((p) => p._id === selectedPerson)?.fullName ??
+            user?.fullName ??
+            "",
+          dateOfBirth:
+            PatientProData.find((p) => p._id === selectedPerson)?.dateOfBirth ??
+            user?.dateOfBirth ??
+            "",
+          gender:
+            PatientProData.find((p) => p._id === selectedPerson)?.gender ??
+            user?.gender ??
+            "",
+        },
+      };
+      if (!confirm("Xác nhận đặt lịch khám!")) return false;
+
+      const res = await createBooking(payload);
+      nav("/lich-kham");
+    } catch (error) {
+      console.log(error);
+      message.error("Đặt lịch thất bại, vui lòng thử lại sau");
+    }
+
+    return true;
+  };
   if (isLoading) return <div className="text-center mt-3">Loading...</div>;
   if (isError)
     return <div className="text-center mt-3">Error loading doctors</div>;
   return (
-    <div className="min-h-screen bg-gray-50 mt-4">
+    <div className="min-h-screen bg-gray-50 my-4">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid lg:grid-cols-12 gap-6">
           {/* Left Sidebar - Filters */}
@@ -336,13 +456,13 @@ const BookingAppointmentPage = () => {
                   </Button>
                 </div>
 
-                <Button
+                {/* <Button
                   type="primary"
                   onClick={() => refetch()}
                   loading={isLoading}
                 >
                   Reset dữ liệu
-                </Button>
+                </Button> */}
               </div>
 
               {/* Doctor List */}
@@ -427,10 +547,13 @@ const BookingAppointmentPage = () => {
                   {/* Morning Slots */}
                   {/* Afternoon Slots */}
                   <TimeSlotPicker
-                    scheduleItem={scheduleItem}
+                    scheduleItem={{
+                      ...scheduleItem,
+                      timeSlots: availableSlots,
+                    }}
                     selectedDate={selectedDate}
                     setSelectedDate={setSelectedDate}
-                    selectedSchedule={selectedSchedule}
+                    selectedSchedule={selectedSlot}
                     handleTimeSelect={handleTimeSelect}
                   />
                 </div>
@@ -445,7 +568,7 @@ const BookingAppointmentPage = () => {
                 Tóm tắt lịch khám
               </h2>
 
-              {selectedSchedule ? (
+              {selectedSchedule && selectedDoctor ? (
                 <div className="space-y-4">
                   {/* Doctor Info */}
                   <div className="flex items-center gap-3 pb-4 border-b">
@@ -462,24 +585,29 @@ const BookingAppointmentPage = () => {
 
                   {/* Schedule Details */}
                   <div className="space-y-3">
+                    {/* Thời gian - Đã sửa: dùng displayDate */}
                     <div className="flex items-start gap-2">
                       <CalendarOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Thời gian</p>
-                        <p className="font-medium">{selectedSchedule.date}</p>
+                        <p className="text-xs text-gray-500">Thời gian khám</p>
+                        <p className="font-medium text-lg text-blue-700">
+                          {selectedSchedule.displayDate}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Địa điểm */}
                     <div className="flex items-start gap-2">
                       <EnvironmentOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Địa điểm</p>
+                        <p className="text-xs text-gray-500">Địa chỉ</p>
                         <p className="font-medium">
                           {selectedSchedule.location}
                         </p>
                       </div>
                     </div>
 
+                    {/* Phòng khám */}
                     <div className="flex items-start gap-2">
                       <HomeOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
@@ -520,7 +648,12 @@ const BookingAppointmentPage = () => {
                     size="large"
                     block
                     className="bg-orange-500 hover:bg-orange-600 border-0"
-                    onClick={() => nav("/lich-kham")}
+                    onClick={async () => {
+                      const canProceed = await handleConfirmBooking();
+                      if (canProceed) {
+                        nav("/lich-kham");
+                      }
+                    }}
                   >
                     Xác nhận đặt khám
                   </Button>
@@ -545,9 +678,9 @@ const BookingAppointmentPage = () => {
         visible={showAddPatientModal}
         onCancel={() => {
           setShowAddPatientModal(false);
-          setNewPatient(initialPatientState);
         }}
         onSubmit={handleAddPatient}
+        confirmLoading={isCreatingPatient}
       />
     </div>
   );
