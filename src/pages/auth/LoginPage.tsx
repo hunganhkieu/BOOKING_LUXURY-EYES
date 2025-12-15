@@ -1,7 +1,7 @@
 import { Button, Card, Form, Input, message } from "antd";
-import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { useDispatch } from "react-redux";
 import { setAuth } from "../../app/features/authSlice";
 import type { LoginPayload } from "../../types/User";
 

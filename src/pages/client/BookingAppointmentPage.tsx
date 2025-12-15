@@ -328,7 +328,8 @@ const BookingAppointmentPage = () => {
       };
       if (!confirm("Xác nhận đặt lịch khám!")) return false;
 
-      const res = await createBooking(payload);
+      await createBooking(payload);
+      message.success("Đặt lịch thành công!")
       nav("/lich-kham");
     } catch (error) {
       console.log(error);
