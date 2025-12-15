@@ -10,16 +10,22 @@ import { Button, Drawer, Dropdown, Menu, message } from "antd";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/imgs/logoEye.png";
+import { useAppDispatch } from "../app/hook";
+import { logout } from "../app/features/authSlice";
 
 const HeaderClient = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const isLoggedIn = !!user;
   const handleLogout = () => {
+    dispatch(logout());
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+
     message.success("Đăng xuất thành công!");
     navigate("/auth/login");
   };

@@ -8,11 +8,13 @@ import {
 import { Button, Card, DatePicker, Form, Input, Radio } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import type { User } from "../../types/User";
 
 const RegisterPage = () => {
   const nav = useNavigate();
 
-  const handleRegister = async (values) => {
+  // ---- HANDLE SUBMIT ----
+  const handleRegister = async (values: User) => {
     try {
       const payload = {
         fullName: values.fullName,
@@ -190,6 +192,12 @@ const RegisterPage = () => {
               Đăng ký
             </Button>
           </Form.Item>
+
+          <Button block size="large" style={{ marginBottom: 12 }}>
+            <Link to="/" style={{ display: "block" }}>
+              Quay về trang chủ
+            </Link>
+          </Button>
         </Form>
 
         {/* Link login */}

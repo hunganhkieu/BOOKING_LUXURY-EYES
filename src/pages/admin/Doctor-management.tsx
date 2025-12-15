@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
+import { PlusOutlined } from "@ant-design/icons";
 import {
   Button,
-  Table,
-  Modal,
+  Card,
   Form,
   Input,
   message,
-  Space,
+  Modal,
   Popconfirm,
-  Card,
+  Space,
+  Table,
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
 import api from "../../api";
 
 const DoctorManagement = () => {

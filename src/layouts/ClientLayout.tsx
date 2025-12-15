@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import FooterClient from "./FooterClient";
 import HeaderClient from "./HeaderClient";
 
 const ClientLayout = () => {
@@ -6,6 +7,7 @@ const ClientLayout = () => {
     <div>
       <HeaderClient />
       <Outlet />
+      <FooterClient />
     </div>
   );
 };
