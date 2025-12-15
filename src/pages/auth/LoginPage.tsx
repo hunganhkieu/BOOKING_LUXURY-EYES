@@ -1,11 +1,6 @@
-
-import React from "react";
-import { Form, Input, Button, Card, message } from "antd";
+import { Button, Card, Form, Input, message } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { Button, Card, Checkbox, Form, Input } from "antd";
-import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const nav = useNavigate();
@@ -18,21 +13,21 @@ const LoginPage = () => {
       });
 
       if (!res.data.success) {
-  message.error("Sai email hoặc mật khẩu!");
-  return;
-}
+        message.error("Sai email hoặc mật khẩu!");
+        return;
+      }
 
-localStorage.setItem("accessToken", res.data.data.accessToken);
-localStorage.setItem("user", JSON.stringify(res.data.data.user));
+      localStorage.setItem("accessToken", res.data.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
-if (res.data.data.user.role === "admin") {
-  nav("/admin/dashboard");
-} else {
-  nav("/");
-}
+      if (res.data.data.user.role === "admin") {
+        nav("/admin/dashboard");
+      } else {
+        nav("/");
+      }
 
-message.success("Đăng nhập thành công!");
-} catch (err) {
+      message.success("Đăng nhập thành công!");
+    } catch (err) {
       console.log(err);
       message.error("Đăng nhập thất bại!");
     }
