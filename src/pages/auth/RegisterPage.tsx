@@ -14,7 +14,6 @@ import api from "../../api";
 const RegisterPage = () => {
   const nav = useNavigate();
 
-  // ---- HANDLE SUBMIT ----
   const handleRegister = async (values) => {
     try {
       const payload = {

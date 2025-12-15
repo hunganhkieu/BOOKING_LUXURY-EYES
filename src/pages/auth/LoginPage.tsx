@@ -1,11 +1,7 @@
 
-import React from "react";
-import { Form, Input, Button, Card, message } from "antd";
-import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { Button, Card, Checkbox, Form, Input } from "antd";
-import { Link } from "react-router-dom";
+import { Button, Card, Checkbox, Form, Input, message } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const nav = useNavigate();
