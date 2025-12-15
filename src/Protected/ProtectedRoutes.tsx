@@ -1,8 +1,19 @@
 import { Navigate } from "react-router-dom";
+import type { ReactNode } from "react";
 
-export default function AuthRoute({ children }) {
+interface User {
+  role?: "admin" | "user";
+}
+
+interface AuthRouteProps {
+  children: ReactNode;
+}
+
+export default function AuthRoute({ children }: AuthRouteProps) {
   const token = localStorage.getItem("accessToken");
-  const user = JSON.parse(localStorage.getItem("user"));
+  const userStr = localStorage.getItem("user");
+
+  const user: User | null = userStr ? JSON.parse(userStr) : null;
 
   if (token && user) {
     if (user.role === "admin") {
@@ -11,5 +22,5 @@ export default function AuthRoute({ children }) {
     return <Navigate to="/" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
