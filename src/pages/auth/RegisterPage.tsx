@@ -8,12 +8,13 @@ import {
 import { Button, Card, DatePicker, Form, Input, Radio } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import type { User } from "../../types/User";
 
 const RegisterPage = () => {
   const nav = useNavigate();
 
   // ---- HANDLE SUBMIT ----
-  const handleRegister = async (values) => {
+  const handleRegister = async (values: User) => {
     try {
       const payload = {
         fullName: values.fullName,

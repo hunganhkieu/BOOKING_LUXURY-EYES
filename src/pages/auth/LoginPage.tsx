@@ -1,13 +1,14 @@
 import { Button, Card, Form, Input, message } from "antd";
+import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
-import { useDispatch } from "react-redux";
 import { setAuth } from "../../app/features/authSlice";
+import type { LoginPayload } from "../../types/User";
 
 const LoginPage = () => {
   const nav = useNavigate();
   const dispatch = useDispatch();
-  const onFinish = async (values) => {
+  const onFinish = async (values: LoginPayload) => {
     try {
       const res = await api.post("/auth/login", {
         email: values.email,

@@ -9,3 +9,8 @@ export interface User {
   phone: string;
   address: string;
 }
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
