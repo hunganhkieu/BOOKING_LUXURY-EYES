@@ -1,7 +1,6 @@
 import {
   CalendarOutlined,
   EnvironmentOutlined,
-  FileImageOutlined,
   HomeOutlined,
   SearchOutlined,
   UserOutlined,
@@ -260,9 +259,13 @@ const BookingAppointmentPage = () => {
           return (
             apmDate === slotDate &&
             apm.time === slot.time &&
-            ["Pending", "Confirmed", "InProgress", "CheckedIn"].includes(
-              apm.status
-            )
+            [
+              "PENDING",
+              "CONFIRM",
+              "CHECKIN",
+              "DONE",
+              "REQUEST-CANCELED",
+            ].includes(apm.status)
           );
         });
         return !isBooked;

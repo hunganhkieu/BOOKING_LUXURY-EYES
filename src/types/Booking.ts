@@ -35,6 +35,8 @@ export interface BookingPayload {
 
 export interface Appointment extends BookingPayload {
   _id?: string;
+  reason?: string;
+  updatedAt?: string;
 }
 export interface BookingResponse {
   success: boolean;

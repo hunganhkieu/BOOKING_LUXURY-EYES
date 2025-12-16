@@ -24,9 +24,13 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { useGetAppointmentsQuery } from "../../app/services/appointmentApi";
-import type { Appointment } from "../../types/Booking";
 import { Link } from "react-router-dom";
+import {
+  useCancelAppointmentConfirmMutation,
+  useCancelAppointmentMutation,
+  useGetAppointmentsQuery,
+} from "../../app/services/appointmentApi";
+import type { Appointment } from "../../types/Booking";
 
 const { TextArea } = Input;
 
@@ -35,23 +39,8 @@ export type AppointmentStatus =
   | "CONFIRM"
   | "CHECKIN"
   | "DONE"
-  | "CANCELED";
-
-// interface Appointment {
-//   id: string;
-//   code: string;
-//   doctorName: string;
-//   specialty: string;
-//   date: string;
-//   time: string;
-//   location: string;
-//   room: string;
-//   status: AppointmentStatus;
-//   price: string;
-//   patientName: string;
-//   phone: string;
-//   reason?: string;
-// }
+  | "CANCELED"
+  | "REQUEST-CANCELED";
 
 const AppointmentHistoryPage = () => {
   const [activeTab, setActiveTab] = useState<string>("all"); // tab đang được chọn
@@ -59,7 +48,6 @@ const AppointmentHistoryPage = () => {
   // bấm xem chi tiết, hủy lịch
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
-
   // quản lý modal
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -69,6 +57,9 @@ const AppointmentHistoryPage = () => {
   const { data, isLoading, isError } = useGetAppointmentsQuery();
   const getAppointments: Appointment[] = data?.data ?? [];
 
+  const [cancelAppointment, { isLoading: isCancelling }] =
+    useCancelAppointmentMutation();
+  const [cancelAppointmentConfirm] = useCancelAppointmentConfirmMutation();
   // màu tag, icon, text hiển thị
   const appointmentStatus = {
     PENDING: {
@@ -100,6 +91,12 @@ const AppointmentHistoryPage = () => {
       bgColor: "bg-red-50",
       text: "Đã hủy",
       icon: <CloseCircleOutlined />,
+    },
+    "REQUEST-CANCELED": {
+      color: "yellow",
+      bgColor: "bg-yellow-50",
+      text: "Đang yêu cầu hủy",
+      icon: <ClockCircleOutlined />,
     },
   } as const;
 
@@ -142,7 +139,7 @@ const AppointmentHistoryPage = () => {
   };
 
   // hủy lịch
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (!cancelReason) {
       message.error("Bạn phải chọn lý do hủy lịch");
       return;
@@ -152,8 +149,48 @@ const AppointmentHistoryPage = () => {
       message.error("Vui lòng nhâp lý do hủy lịch");
       return;
     }
+
+    if (!selectedAppointment?._id) {
+      message.error("Lịch hẹn không hợp lệ, không thể hủy");
+      return;
+    }
+
+    const reason = cancelReason === "other" ? otherReason : cancelReason;
+
+    const now = dayjs();
+    const cancelCountThisMount = getAppointments.filter(
+      (apm) =>
+        (apm.status === "CANCELED" || apm.status === "REQUEST-CANCELED") &&
+        dayjs(apm.updatedAt).isSame(now, "month")
+    ).length;
+
+    if (cancelCountThisMount >= 4) {
+      message.error("Bạn đã đạt giới hạn 4 lượt hủy trong tháng này");
+      return;
+    }
+    try {
+      if (selectedAppointment.status === "PENDING") {
+        await cancelAppointment({
+          id: selectedAppointment._id,
+          reason,
+        }).unwrap();
+        message.success("Hủy lịch thành công");
+      }
+
+      if (selectedAppointment.status === "CONFIRM") {
+        await cancelAppointmentConfirm({
+          id: selectedAppointment._id,
+          reason,
+        }).unwrap();
+        message.success("Gửi yêu cầu hủy lịch thành công");
+      }
+    } catch (error) {
+      console.log(error);
+    }
     setCancelModalVisible(false);
     setCancelReason("");
+    setOtherReason("");
+    setSelectedAppointment(null);
   };
   // lọc theo trạng thái
   const tabItems = [
@@ -189,6 +226,12 @@ const AppointmentHistoryPage = () => {
       key: "CANCELED",
       label: `Đã hủy (${
         getAppointments.filter((a) => a.status === "CANCELED").length
+      })`,
+    },
+    {
+      key: "REQUEST-CANCELED",
+      label: `Đang yêu cầu hủy (${
+        getAppointments.filter((a) => a.status === "REQUEST-CANCELED").length
       })`,
     },
   ];
@@ -395,6 +438,29 @@ const AppointmentHistoryPage = () => {
             </div>
 
             <div className="border-b pb-3">
+              <h4 className="font-semibold text-gray-700 mb-2">Thanh toán</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Phương thức thanh toán:</span>
+                  <span className="font-medium">
+                    {selectedAppointment.payment.paymentMethod ===
+                    "PAY_AT_CLINIC"
+                      ? "Thanh toán sau tại phòng khám"
+                      : selectedAppointment.payment.paymentMethod}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Trạng thái thanh toán:</span>
+                  <span className="font-medium">
+                    {selectedAppointment.payment.paymentStatus === "UNPAID"
+                      ? "Chưa thanh toán"
+                      : selectedAppointment.payment.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-b pb-3">
               <h4 className="font-semibold text-gray-700 mb-2">
                 Thông tin bệnh nhân
               </h4>
@@ -462,9 +528,15 @@ const AppointmentHistoryPage = () => {
             </div>
 
             <div className="flex flex-wrap justify-between border-b pb-3">
-              <h4 className="font-semibold text-gray-700 mb-2">Lý do khám</h4>
+              <h4 className="font-semibold text-gray-700 mb-2">
+                {selectedAppointment.status === "CANCELED"
+                  ? "Lý do hủy"
+                  : "Lý do khám"}
+              </h4>
               <p className="text-sm text-gray-600 line-clamp-3">
-                {selectedAppointment?.symptoms || "Không có"}
+                {selectedAppointment?.status === "CANCELED"
+                  ? selectedAppointment.reason || "Không có lý do hủy"
+                  : selectedAppointment?.symptoms || "Không có"}
               </p>
             </div>
 
@@ -497,6 +569,7 @@ const AppointmentHistoryPage = () => {
           disabled:
             !cancelReason || (cancelReason === "other" && !otherReason.trim()),
         }}
+        loading={isCancelling}
         cancelText="Đóng"
       >
         {selectedAppointment && (

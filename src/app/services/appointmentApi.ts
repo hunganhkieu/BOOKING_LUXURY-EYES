@@ -1,6 +1,10 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 import { createApi } from "@reduxjs/toolkit/query/react";
-import type { BookingPayload, BookingResponse } from "../../types/Booking";
+import type {
+  Appointment,
+  BookingPayload,
+  BookingResponse,
+} from "../../types/Booking";
 
 export const appointmentApi = createApi({
   reducerPath: "appointmentApi",
@@ -30,6 +34,30 @@ export const appointmentApi = createApi({
         { type: "AppointmentScheduleId", id: arg.scheduleId },
       ],
     }),
+
+    cancelAppointment: builder.mutation<
+      Appointment,
+      { id: string; reason: string }
+    >({
+      query: ({ id, reason }) => ({
+        url: `appointments/${id}`,
+        method: "PATCH",
+        body: { status: "CANCELED", reason },
+      }),
+      invalidatesTags: ["Appointments"],
+    }),
+
+    cancelAppointmentConfirm: builder.mutation<
+      Appointment,
+      { id: string; reason: string }
+    >({
+      query: ({ id, reason }) => ({
+        url: `appointments/${id}`,
+        method: "PATCH",
+        body: { status: "REQUEST-CANCELED", reason },
+      }),
+      invalidatesTags: ["Appointments"],
+    }),
   }),
 });
 
@@ -37,4 +65,6 @@ export const {
   useGetAppointmentsQuery,
   useGetBookingByScheduleIdQuery,
   useCreateBookingMutation,
+  useCancelAppointmentMutation,
+  useCancelAppointmentConfirmMutation,
 } = appointmentApi;
