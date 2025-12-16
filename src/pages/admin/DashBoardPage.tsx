@@ -1,26 +1,26 @@
-import React, { useEffect, useState } from "react";
 import {
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import {
+  Avatar,
+  Badge,
+  Calendar,
   Card,
-  Row,
   Col,
+  List,
+  message,
+  Progress,
+  Row,
   Statistic,
   Table,
   Tag,
-  Avatar,
-  Calendar,
-  Badge,
-  Progress,
-  List,
-  message,
 } from "antd";
-import {
-  CalendarOutlined,
-  TeamOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
 import dayjs from "dayjs";
+import React, { useEffect, useState } from "react";
 import api from "../../api";
 
 /* ================== COMPONENT ================== */

@@ -1,30 +1,46 @@
-import React, { useEffect, useState } from "react";
-import { Table, Tag, Select, message } from "antd";
+import { Select, Table, Tag, message } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { useEffect, useState } from "react";
 import api from "../../api";
+import type { Appointment } from "../../types/Appointment";
+import type { AppointmentStatus } from "../../types/Booking";
 
-const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  Pending: { text: "Chờ xác nhận", color: "orange" },
-  Confirmed: { text: "Đã xác nhận", color: "green" },
-  Completed: { text: "Hoàn thành", color: "blue" },
-  Cancelled: { text: "Đã huỷ", color: "red" },
+/* ================== STATUS MAP ================== */
+
+const STATUS_MAP: Record<
+  AppointmentStatus,
+  { text: string; color: string }
+> = {
+  PENDING: { text: "Chờ xác nhận", color: "orange" },
+  CONFIRM: { text: "Đã xác nhận", color: "green" },
+  CHECKIN: { text: "Đã check-in", color: "blue" },
+  DONE: { text: "Hoàn thành", color: "cyan" },
+  CANCELED: { text: "Đã huỷ", color: "red" },
+  "REQUEST-CANCELED": { text: "Yêu cầu huỷ", color: "volcano" },
 };
 
-const STATUS_FLOW: Record<string, string[]> = {
-  Pending: ["Confirmed", "Cancelled"],
-  Confirmed: ["Completed", "Cancelled"],
-  Completed: [],
-  Cancelled: [],
+/* ================== STATUS FLOW ================== */
+
+const STATUS_FLOW: Record<AppointmentStatus, AppointmentStatus[]> = {
+  PENDING: ["CONFIRM", "CANCELED"],
+  CONFIRM: ["CHECKIN", "CANCELED"],
+  CHECKIN: ["DONE"],
+  DONE: [],
+  CANCELED: [],
+  "REQUEST-CANCELED": ["CANCELED"],
 };
+
+/* ================== COMPONENT ================== */
 
 const AppointmentManagement = () => {
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/appointments");
-      setAppointments(res.data.data);
+      const res = await api.get<{ data: Appointment[] }>("/appointments");
+      setAppointments(res.data.data ?? []);
     } catch {
       message.error("Không thể tải lịch hẹn");
     } finally {
@@ -36,7 +52,10 @@ const AppointmentManagement = () => {
     fetchAppointments();
   }, []);
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (
+    id: string,
+    status: AppointmentStatus
+  ) => {
     try {
       await api.put(`/appointments/${id}`, { status });
       message.success("Cập nhật trạng thái thành công");
@@ -46,19 +65,23 @@ const AppointmentManagement = () => {
     }
   };
 
-  const columns = [
+  /* ================== TABLE COLUMNS ================== */
+
+  const columns: ColumnsType<Appointment> = [
     {
       title: "Bệnh nhân",
-      render: (_: any, record: any) => record.patient?.fullName,
+      render: (_, record) => record.patient?.fullName ?? "---",
     },
     {
       title: "Bác sĩ",
-      render: (_: any, record: any) => record.doctor?.name,
+      render: (_, record) => record.doctor?.name ?? "---",
     },
     {
       title: "Ngày khám",
-      render: (_: any, record: any) =>
-        new Date(record.dateTime).toLocaleDateString("vi-VN"),
+      render: (_, record) =>
+        record.dateTime
+          ? new Date(record.dateTime).toLocaleDateString("vi-VN")
+          : "---",
     },
     {
       title: "Giờ",
@@ -66,50 +89,53 @@ const AppointmentManagement = () => {
     },
     {
       title: "Phòng",
-      render: (_: any, record: any) => record.room?.name,
+      render: (_, record) => record.room?.name ?? "---",
     },
     {
       title: "Thanh toán",
-      render: (_: any, record: any) => (
-        <Tag color={record.payment?.paymentStatus === "PAID" ? "green" : "red"}>
-          {record.payment?.paymentStatus}
-        </Tag>
-      ),
+      render: (_, record) => {
+        const paid = record.payment?.paymentStatus === "PAID";
+        return (
+          <Tag color={paid ? "green" : "red"}>
+            {record.payment?.paymentStatus ?? "UNPAID"}
+          </Tag>
+        );
+      },
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      render: (status: string) => {
+      render: (status: AppointmentStatus) => {
         const s = STATUS_MAP[status];
-        return <Tag color={s?.color}>{s?.text}</Tag>;
+        return <Tag color={s.color}>{s.text}</Tag>;
       },
     },
     {
       title: "Thao tác",
-      render: (_: any, record: any) => {
-        const allowedStatus = STATUS_FLOW[record.status] || [];
+      render: (_, record) => {
+        const allowedStatus = STATUS_FLOW[record.status];
 
-        if (allowedStatus.length === 0) return null;
+        if (!allowedStatus || allowedStatus.length === 0) return null;
 
         return (
           <Select
             placeholder="Đổi trạng thái"
-            style={{ width: 160 }}
-            onChange={(value) => updateStatus(record._id, value)}
-          >
-            {allowedStatus.map((s) => (
-              <Select.Option key={s} value={s}>
-                {STATUS_MAP[s].text}
-              </Select.Option>
-            ))}
-          </Select>
+            style={{ width: 180 }}
+            onChange={(value) =>
+              updateStatus(record._id, value as AppointmentStatus)
+            }
+            options={allowedStatus.map((status) => ({
+              value: status,
+              label: STATUS_MAP[status].text,
+            }))}
+          />
         );
       },
     },
   ];
 
   return (
-    <Table
+    <Table<Appointment>
       rowKey="_id"
       loading={loading}
       columns={columns}

@@ -4,29 +4,54 @@ import {
   Card,
   Form,
   Input,
+  InputNumber,
   message,
   Modal,
   Popconfirm,
   Space,
   Table,
 } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 import api from "../../api";
 
-const DoctorManagement = () => {
-  const [doctors, setDoctors] = useState([]);
+/* ================= TYPES ================= */
+
+interface Doctor {
+  _id: string;
+  name: string;
+  avatar?: string;
+  specialty: string;
+  price: number;
+  experience_year: number;
+  description?: string;
+}
+
+interface DoctorFormValues {
+  name: string;
+  avatar?: string;
+  specialty: string;
+  price: number;
+  experience_year: number;
+  description?: string;
+}
+
+/* ================= COMPONENT ================= */
+
+const DoctorManagement: React.FC = () => {
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-  const [editingDoctor, setEditingDoctor] = useState(null);
-  const [form] = Form.useForm();
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
 
-  /* ================= FETCH ================= */
+  const [form] = Form.useForm<DoctorFormValues>();
+
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/doctors");
-      setDoctors(res.data.data || []);
-    } catch (err) {
+      const res = await api.get<{ data: Doctor[] }>("/doctors");
+      setDoctors(res.data.data ?? []);
+    } catch {
       message.error("Không thể tải danh sách bác sĩ");
     } finally {
       setLoading(false);
@@ -37,8 +62,7 @@ const DoctorManagement = () => {
     fetchDoctors();
   }, []);
 
-  /* ================= CREATE / UPDATE ================= */
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values: DoctorFormValues) => {
     try {
       if (editingDoctor) {
         await api.put(`/doctors/${editingDoctor._id}`, values);
@@ -57,8 +81,7 @@ const DoctorManagement = () => {
     }
   };
 
-  /* ================= DELETE ================= */
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     try {
       await api.delete(`/doctors/${id}`);
       message.success("Xoá bác sĩ thành công");
@@ -68,21 +91,13 @@ const DoctorManagement = () => {
     }
   };
 
-  /* ================= TABLE ================= */
-  const columns = [
-    {
-      title: "Tên bác sĩ",
-      dataIndex: "name",
-    },
-    {
-      title: "Chuyên khoa",
-      dataIndex: "specialty",
-      render: (text) => text || "—",
-    },
+  const columns: ColumnsType<Doctor> = [
+    { title: "Tên bác sĩ", dataIndex: "name" },
+    { title: "Chuyên khoa", dataIndex: "specialty" },
     {
       title: "Giá khám",
       dataIndex: "price",
-      render: (price) => `${price?.toLocaleString()} đ`,
+      render: (price) => `${price.toLocaleString()} đ`,
     },
     {
       title: "Kinh nghiệm",
@@ -93,6 +108,7 @@ const DoctorManagement = () => {
       title: "Mô tả",
       dataIndex: "description",
       ellipsis: true,
+      render: (text) => text || "—",
     },
     {
       title: "Hành động",
@@ -102,7 +118,14 @@ const DoctorManagement = () => {
             type="link"
             onClick={() => {
               setEditingDoctor(record);
-              form.setFieldsValue(record);
+              form.setFieldsValue({
+                name: record.name,
+                avatar: record.avatar,
+                specialty: record.specialty,
+                price: record.price,
+                experience_year: record.experience_year,
+                description: record.description,
+              });
               setOpenModal(true);
             }}
           >
@@ -139,15 +162,10 @@ const DoctorManagement = () => {
         </Button>
       }
     >
-      <Table
-        rowKey="_id"
-        loading={loading}
-        columns={columns}
-        dataSource={doctors}
-      />
+      <Table rowKey="_id" loading={loading} columns={columns} dataSource={doctors} />
 
-      {/* MODAL */}
       <Modal
+        destroyOnClose
         open={openModal}
         title={editingDoctor ? "Cập nhật bác sĩ" : "Thêm bác sĩ"}
         onCancel={() => setOpenModal(false)}
@@ -155,40 +173,28 @@ const DoctorManagement = () => {
         okText="Lưu"
       >
         <Form layout="vertical" form={form} onFinish={handleSubmit}>
-          <Form.Item
-            label="Tên bác sĩ"
-            name="name"
-            rules={[{ required: true, message: "Nhập tên bác sĩ" }]}
-          >
+          <Form.Item label="Tên bác sĩ" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
           <Form.Item label="Avatar" name="avatar">
-            <Input placeholder="https://example.com/avatar.jpg" />
-          </Form.Item>
-
-          <Form.Item
-            label="Chuyên khoa"
-            name="specialty"
-            rules={[{ required: true, message: "Nhập chuyên khoa" }]}
-          >
             <Input />
           </Form.Item>
 
-          <Form.Item
-            label="Giá khám"
-            name="price"
-            rules={[{ required: true, message: "Nhập giá khám" }]}
-          >
-            <Input type="number" />
+          <Form.Item label="Chuyên khoa" name="specialty" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Giá khám" name="price" rules={[{ required: true }]}>
+            <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>
 
           <Form.Item
             label="Số năm kinh nghiệm"
             name="experience_year"
-            rules={[{ required: true, message: "Nhập số năm kinh nghiệm" }]}
+            rules={[{ required: true }]}
           >
-            <Input type="number" />
+            <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>
 
           <Form.Item label="Mô tả" name="description">
