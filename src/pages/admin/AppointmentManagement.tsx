@@ -115,9 +115,13 @@ const AppointmentManagement = () => {
           <Select
             placeholder="Đổi trạng thái"
             style={{ width: 180 }}
-            onChange={(value) =>
-              updateStatus(record._id, value as AppointmentStatus)
-            }
+            onChange={(value) => {
+              if (!record._id) {
+                message.error("Không tìm thấy ID lịch hẹn");
+                return;
+              }
+              updateStatus(record._id, value as AppointmentStatus);
+            }}
             options={allowedStatus.map((status) => ({
               value: status,
               label: STATUS_MAP[status].text,
