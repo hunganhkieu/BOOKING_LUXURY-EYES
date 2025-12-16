@@ -6,9 +6,10 @@ import {
 } from "@ant-design/icons";
 import { Badge, Button, Card, Carousel } from "antd";
 import { Link } from "react-router-dom";
-import FooterClient from "../../layouts/FooterClient";
+import { useAppSelector } from "../../app/hook";
 
 const HomePage = () => {
+  const isAuth = useAppSelector((state) => state.auth.isAuthenticated);
   const services = [
     {
       icon: <CalendarOutlined className="text-3xl text-blue-600" />,
@@ -70,11 +71,11 @@ const HomePage = () => {
               <p className="text-xl mb-6">
                 Đội ngũ bác sĩ giàu kinh nghiệm, trang thiết bị hiện đại
               </p>
-              <Link to="/dat-lich-kham">
+              {/* <Link to="/dat-lich-kham">
                 <Button type="primary" size="large" icon={<CalendarOutlined />}>
                   Đặt lịch ngay
                 </Button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -87,11 +88,11 @@ const HomePage = () => {
               <p className="text-xl mb-6">
                 Luôn sẵn sàng phục vụ mọi lúc, mọi nơi
               </p>
-              <Link to="/about">
+              {/* <Link to="/about">
                 <Button type="default" size="large">
                   Tìm hiểu thêm
                 </Button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -104,11 +105,11 @@ const HomePage = () => {
               <p className="text-xl mb-6">
                 Trang thiết bị hiện đại, chính xác cao
               </p>
-              <Link to="/services">
+              {/* <Link to="/services">
                 <Button type="default" size="large">
                   Xem dịch vụ
                 </Button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -118,7 +119,7 @@ const HomePage = () => {
       <div className="container mx-auto px-4 -mt-16 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {services.map((service, idx) => (
-            <Link to={service.link} key={idx}>
+            <Link to={isAuth ? service.link : "/auth/login"} key={idx}>
               <Card
                 hoverable
                 className="text-center shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
@@ -220,7 +221,6 @@ const HomePage = () => {
           </Link>
         </div>
       </div>
-      <FooterClient />
     </div>
   );
 };

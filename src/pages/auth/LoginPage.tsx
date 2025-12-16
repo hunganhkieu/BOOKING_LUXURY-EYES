@@ -1,13 +1,15 @@
 
-import api from "../../api";
-import { Button, Card, Checkbox, Form, Input, message } from "antd";
+import { Button, Card, Form, Input, message } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-
+import api from "../../api";
+import { useDispatch } from "react-redux";
+import { setAuth } from "../../app/features/authSlice";
+import type { LoginPayload } from "../../types/User";
 
 const LoginPage = () => {
   const nav = useNavigate();
-
-  const onFinish = async (values) => {
+  const dispatch = useDispatch();
+  const onFinish = async (values: LoginPayload) => {
     try {
       const res = await api.post("/auth/login", {
         email: values.email,
@@ -18,6 +20,9 @@ const LoginPage = () => {
         message.error("Sai email hoặc mật khẩu!");
         return;
       }
+
+      const { user, accessToken } = res.data.data;
+      dispatch(setAuth({ user, accessToken }));
 
       localStorage.setItem("accessToken", res.data.data.accessToken);
       localStorage.setItem("user", JSON.stringify(res.data.data.user));
@@ -63,6 +68,12 @@ const LoginPage = () => {
 
           <Button type="primary" htmlType="submit" block size="large">
             Đăng nhập
+          </Button>
+
+          <Button block size="large" style={{ marginTop: 12 }}>
+            <Link to="/" style={{ display: "block" }}>
+              Quay về trang chủ
+            </Link>
           </Button>
         </Form>
 

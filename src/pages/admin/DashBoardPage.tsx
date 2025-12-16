@@ -67,16 +67,14 @@ const DashBoardPage: React.FC = () => {
 
       // ===== TABLE RECENT =====
       setAppointments(
-        appointmentsData
-          .slice(0, 5)
-          .map((a: any) => ({
-            key: a._id,
-            patient: a.patient?.fullName,
-            doctor: a.doctor?.name,
-            time: `${a.time} - ${dayjs(a.dateTime).format("DD/MM/YYYY")}`,
-            department: a.doctor?.specialty,
-            status: a.status,
-          }))
+        appointmentsData.slice(0, 5).map((a: any) => ({
+          key: a._id,
+          patient: a.patient?.fullName,
+          doctor: a.doctor?.name,
+          time: `${a.time} - ${dayjs(a.dateTime).format("DD/MM/YYYY")}`,
+          department: a.doctor?.specialty,
+          status: a.status,
+        }))
       );
 
       // ===== UPCOMING =====

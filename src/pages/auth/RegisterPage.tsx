@@ -1,7 +1,3 @@
-
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Form, Input, Button, Card, DatePicker, Radio } from "antd";
 import {
   IdcardOutlined,
   LockOutlined,
@@ -9,12 +5,16 @@ import {
   PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import { Button, Card, DatePicker, Form, Input, Radio } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import type { User } from "../../types/User";
 
 const RegisterPage = () => {
   const nav = useNavigate();
 
-  const handleRegister = async (values) => {
+  // ---- HANDLE SUBMIT ----
+  const handleRegister = async (values: User) => {
     try {
       const payload = {
         fullName: values.fullName,
@@ -45,7 +45,9 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-xl my-8">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Đăng ký tài khoản</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Đăng ký tài khoản
+          </h1>
           <p className="text-gray-500 mt-1">Tạo tài khoản để sử dụng dịch vụ</p>
         </div>
 
@@ -63,7 +65,11 @@ const RegisterPage = () => {
               name="fullName"
               rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
             >
-              <Input prefix={<UserOutlined />} placeholder="Nguyễn Văn A" size="large" />
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="Nguyễn Văn A"
+                size="large"
+              />
             </Form.Item>
 
             <Form.Item
@@ -94,7 +100,11 @@ const RegisterPage = () => {
                 { pattern: /^[0-9]{9,12}$/, message: "CCCD không hợp lệ!" },
               ]}
             >
-              <Input prefix={<IdcardOutlined />} placeholder="0123456789" size="large" />
+              <Input
+                prefix={<IdcardOutlined />}
+                placeholder="0123456789"
+                size="large"
+              />
             </Form.Item>
 
             <Form.Item
@@ -105,7 +115,11 @@ const RegisterPage = () => {
                 { type: "email", message: "Email không hợp lệ!" },
               ]}
             >
-              <Input prefix={<MailOutlined />} placeholder="email@example.com" size="large" />
+              <Input
+                prefix={<MailOutlined />}
+                placeholder="email@example.com"
+                size="large"
+              />
             </Form.Item>
 
             <Form.Item
@@ -116,7 +130,11 @@ const RegisterPage = () => {
                 { pattern: /^[0-9]{10}$/, message: "SĐT không hợp lệ!" },
               ]}
             >
-              <Input prefix={<PhoneOutlined />} placeholder="0123456789" size="large" />
+              <Input
+                prefix={<PhoneOutlined />}
+                placeholder="0123456789"
+                size="large"
+              />
             </Form.Item>
 
             <Form.Item
@@ -139,7 +157,11 @@ const RegisterPage = () => {
                 { min: 6, message: "Mật khẩu ít nhất 6 ký tự!" },
               ]}
             >
-              <Input.Password prefix={<LockOutlined />} size="large" placeholder="******" />
+              <Input.Password
+                prefix={<LockOutlined />}
+                size="large"
+                placeholder="******"
+              />
             </Form.Item>
 
             <Form.Item
@@ -157,7 +179,11 @@ const RegisterPage = () => {
                 }),
               ]}
             >
-              <Input.Password prefix={<LockOutlined />} size="large" placeholder="******" />
+              <Input.Password
+                prefix={<LockOutlined />}
+                size="large"
+                placeholder="******"
+              />
             </Form.Item>
           </div>
 
@@ -166,6 +192,12 @@ const RegisterPage = () => {
               Đăng ký
             </Button>
           </Form.Item>
+
+          <Button block size="large" style={{ marginBottom: 12 }}>
+            <Link to="/" style={{ display: "block" }}>
+              Quay về trang chủ
+            </Link>
+          </Button>
         </Form>
 
         {/* Link login */}

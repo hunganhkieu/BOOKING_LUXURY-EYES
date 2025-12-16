@@ -26,7 +26,11 @@ const AdminLayout: React.FC = () => {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       {/* ===== SIDEBAR ===== */}
-      <Sider breakpoint="lg" collapsedWidth="0" style={{ background: "#0EA5E9" }}>
+      <Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        style={{ background: "#0EA5E9" }}
+      >
         {/* LOGO */}
         <div
           style={{

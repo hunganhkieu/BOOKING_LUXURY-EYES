@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
+
 import {
-  Table,
   Button,
-  Modal,
+  Card,
+  DatePicker,
   Form,
-  Select,
   Input,
   InputNumber,
-  DatePicker,
-  TimePicker,
-  Tag,
-  message,
-  Card,
+  Modal,
+  Select,
   Space,
+
+  Table,
+  Tag,
+  TimePicker,
+  message,
 } from "antd";
 import dayjs from "dayjs";
 import api from "../../api";
@@ -120,18 +122,14 @@ const ScheduleManagement = () => {
       render: (_: any, r: any) => (
         <Space direction="vertical" size={0}>
           <strong>{r.roomName}</strong>
-          <span style={{ fontSize: 12, color: "#888" }}>
-            ID: {r.roomId}
-          </span>
+          <span style={{ fontSize: 12, color: "#888" }}>ID: {r.roomId}</span>
         </Space>
       ),
     },
     {
       title: "Giá khám",
       dataIndex: "price",
-      render: (v: number) => (
-        <Tag color="blue">{v?.toLocaleString()}đ</Tag>
-      ),
+      render: (v: number) => <Tag color="blue">{v?.toLocaleString()}đ</Tag>,
     },
     {
       title: "Ngày & Giờ",
@@ -200,6 +198,7 @@ const ScheduleManagement = () => {
           {/* AUTO FILL */}
           <Form.Item name="price" label="Giá khám">
             <InputNumber style={{ width: "100%" }} disabled />
+
           </Form.Item>
 
           <Form.Item name="roomId" label="Mã phòng">
