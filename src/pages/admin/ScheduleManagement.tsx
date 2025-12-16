@@ -1,20 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
 import {
-  Table,
   Button,
-  Modal,
+  Card,
+  DatePicker,
   Form,
-  Select,
   Input,
   InputNumber,
-  DatePicker,
-  TimePicker,
-  Tag,
-  message,
-  Card,
+  Modal,
+  Select,
   Space,
+  Table,
+  Tag,
+  TimePicker,
+  message,
 } from "antd";
 import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../api";
 
 const ScheduleManagement = () => {
@@ -120,18 +120,14 @@ const ScheduleManagement = () => {
       render: (_: any, r: any) => (
         <Space direction="vertical" size={0}>
           <strong>{r.roomName}</strong>
-          <span style={{ fontSize: 12, color: "#888" }}>
-            ID: {r.roomId}
-          </span>
+          <span style={{ fontSize: 12, color: "#888" }}>ID: {r.roomId}</span>
         </Space>
       ),
     },
     {
       title: "Giá khám",
       dataIndex: "price",
-      render: (v: number) => (
-        <Tag color="blue">{v?.toLocaleString()}đ</Tag>
-      ),
+      render: (v: number) => <Tag color="blue">{v?.toLocaleString()}đ</Tag>,
     },
     {
       title: "Ngày & Giờ",
@@ -185,10 +181,7 @@ const ScheduleManagement = () => {
             label="Bác sĩ"
             rules={[{ required: true, message: "Vui lòng chọn bác sĩ" }]}
           >
-            <Select
-              placeholder="Chọn bác sĩ"
-              onChange={handleDoctorChange}
-            >
+            <Select placeholder="Chọn bác sĩ" onChange={handleDoctorChange}>
               {doctors.map((d) => (
                 <Select.Option key={d._id} value={d._id}>
                   {d.name} – {d.specialty}

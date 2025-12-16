@@ -2,15 +2,12 @@ import { Select, Table, Tag, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 import api from "../../api";
-import type { Appointment } from "../../types/Appointment";
-import type { AppointmentStatus } from "../../types/Booking";
+import type { Appointment } from "../../types/Booking";
+import type { AppointmentStatus } from "../client/AppointmentHistoryPage";
 
 /* ================== STATUS MAP ================== */
 
-const STATUS_MAP: Record<
-  AppointmentStatus,
-  { text: string; color: string }
-> = {
+const STATUS_MAP: Record<AppointmentStatus, { text: string; color: string }> = {
   PENDING: { text: "Chờ xác nhận", color: "orange" },
   CONFIRM: { text: "Đã xác nhận", color: "green" },
   CHECKIN: { text: "Đã check-in", color: "blue" },
@@ -52,10 +49,7 @@ const AppointmentManagement = () => {
     fetchAppointments();
   }, []);
 
-  const updateStatus = async (
-    id: string,
-    status: AppointmentStatus
-  ) => {
+  const updateStatus = async (id: string, status: AppointmentStatus) => {
     try {
       await api.put(`/appointments/${id}`, { status });
       message.success("Cập nhật trạng thái thành công");
