@@ -56,20 +56,19 @@ const AdminLayout: React.FC = () => {
               icon: <DashboardOutlined />,
               label: "Tổng quan",
             },
-      
             {
               key: "/admin/appointments",
               icon: <CalendarOutlined />,
               label: "Lịch hẹn",
             },
-             
             {
               key: "/admin/patients",
               icon: <UserOutlined />,
               label: "Bệnh nhân",
-            },{
+            },
+            {
               key: "/admin/schedule",
-              icon: <ClockCircleOutlined  />,
+              icon: <ClockCircleOutlined />,
               label: "Lịch của bác sĩ",
             },
             {

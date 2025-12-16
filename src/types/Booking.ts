@@ -34,3 +34,11 @@ export interface BookingResponse {
   success: boolean;
   data: BookingPayload[];
 }
+
+export type AppointmentStatus =
+  | "PENDING"
+  | "CONFIRM"
+  | "CHECKIN"
+  | "DONE"
+  | "CANCELED"
+  | "REQUEST-CANCELED";

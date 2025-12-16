@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   Button,
@@ -13,7 +13,6 @@ import {
   message,
   Card,
   Space,
-  Popconfirm,
 } from "antd";
 import dayjs from "dayjs";
 import api from "../../api";
@@ -25,7 +24,15 @@ const ScheduleManagement = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // ================= FETCH =================
+  // ================= MAP DOCTOR =================
+  const doctorMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    doctors.forEach((d) => {
+      map[d._id] = d;
+    });
+    return map;
+  }, [doctors]);
+
   const fetchDoctors = async () => {
     try {
       const res = await api.get("/doctors");
@@ -51,6 +58,17 @@ const ScheduleManagement = () => {
     fetchDoctors();
     fetchSchedules();
   }, []);
+
+  const handleDoctorChange = (doctorId: string) => {
+    const doctor = doctorMap[doctorId];
+    if (!doctor) return;
+
+    form.setFieldsValue({
+      price: doctor.defaultPrice,
+      roomId: doctor.room?.id,
+      roomName: doctor.room?.name,
+    });
+  };
 
   // ================= CREATE =================
   const handleCreate = async (values: any) => {
@@ -81,19 +99,21 @@ const ScheduleManagement = () => {
     }
   };
 
-  
   // ================= TABLE =================
   const columns = [
     {
       title: "Bác sĩ",
-      render: (_: any, r: any) => (
-        <Space direction="vertical" size={0}>
-          <strong>{r.doctor?.name || "—"}</strong>
-          <span style={{ fontSize: 12, color: "#888" }}>
-            {r.doctor?.specialty || "—"}
-          </span>
-        </Space>
-      ),
+      render: (_: any, r: any) => {
+        const doctor = doctorMap[r.doctorId];
+        return (
+          <Space direction="vertical" size={0}>
+            <strong>{doctor?.name || "—"}</strong>
+            <span style={{ fontSize: 12, color: "#888" }}>
+              {doctor?.specialty || "—"}
+            </span>
+          </Space>
+        );
+      },
     },
     {
       title: "Phòng",
@@ -125,14 +145,19 @@ const ScheduleManagement = () => {
           </Tag>
         )),
     },
-
   ];
 
   return (
     <Card
       title="Quản lý lịch làm việc bác sĩ"
       extra={
-        <Button type="primary" onClick={() => setOpen(true)}>
+        <Button
+          type="primary"
+          onClick={() => {
+            form.resetFields();
+            setOpen(true);
+          }}
+        >
           Tạo lịch
         </Button>
       }
@@ -142,10 +167,9 @@ const ScheduleManagement = () => {
         loading={loading}
         columns={columns}
         dataSource={schedules}
-        size="middle"
       />
 
-      {/* MODAL CREATE */}
+      {/* ================= MODAL CREATE ================= */}
       <Modal
         open={open}
         title="Tạo lịch làm việc"
@@ -155,36 +179,38 @@ const ScheduleManagement = () => {
         destroyOnClose
       >
         <Form layout="vertical" form={form} onFinish={handleCreate}>
+          {/* BÁC SĨ */}
           <Form.Item
             name="doctorId"
             label="Bác sĩ"
             rules={[{ required: true, message: "Vui lòng chọn bác sĩ" }]}
           >
-            <Select placeholder="Chọn bác sĩ">
+            <Select
+              placeholder="Chọn bác sĩ"
+              onChange={handleDoctorChange}
+            >
               {doctors.map((d) => (
                 <Select.Option key={d._id} value={d._id}>
-                  {d.name}
+                  {d.name} – {d.specialty}
                 </Select.Option>
               ))}
             </Select>
           </Form.Item>
 
-          <Form.Item name="roomId" label="Mã phòng" rules={[{ required: true }]}>
-            <InputNumber style={{ width: "100%" }} />
+          {/* AUTO FILL */}
+          <Form.Item name="price" label="Giá khám">
+            <InputNumber style={{ width: "100%" }} disabled />
           </Form.Item>
 
-          <Form.Item
-            name="roomName"
-            label="Tên phòng"
-            rules={[{ required: true }]}
-          >
-            <Input />
+          <Form.Item name="roomId" label="Mã phòng">
+            <InputNumber style={{ width: "100%" }} disabled />
           </Form.Item>
 
-          <Form.Item name="price" label="Giá khám" rules={[{ required: true }]}>
-            <InputNumber style={{ width: "100%" }} />
+          <Form.Item name="roomName" label="Tên phòng">
+            <Input disabled />
           </Form.Item>
 
+          {/* ADMIN NHẬP */}
           <Form.Item name="date" label="Ngày" rules={[{ required: true }]}>
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>

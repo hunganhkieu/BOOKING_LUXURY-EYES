@@ -14,11 +14,11 @@ import {
   message,
 } from "antd";
 import {
-  UserOutlined,
   CalendarOutlined,
   TeamOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../api";
@@ -39,11 +39,7 @@ const DashBoardPage: React.FC = () => {
 
   const fetchDashboard = async () => {
     try {
-      const [
-        appointmentRes,
-        doctorRes,
-        patientRes,
-      ] = await Promise.all([
+      const [appointmentRes, doctorRes, patientRes] = await Promise.all([
         api.get("/appointments"),
         api.get("/doctors"),
         api.get("/patients"),
@@ -58,8 +54,7 @@ const DashBoardPage: React.FC = () => {
       // ===== STATS =====
       setStats({
         todayAppointments: appointmentsData.filter(
-          (a: any) =>
-            dayjs(a.dateTime).format("YYYY-MM-DD") === today
+          (a: any) => dayjs(a.dateTime).format("YYYY-MM-DD") === today
         ).length,
         newPatients: patientsData.length,
         doctors: doctorsData.length,
@@ -87,9 +82,7 @@ const DashBoardPage: React.FC = () => {
       // ===== UPCOMING =====
       setUpcoming(
         appointmentsData
-          .filter((a: any) =>
-            dayjs(a.dateTime).isAfter(dayjs())
-          )
+          .filter((a: any) => dayjs(a.dateTime).isAfter(dayjs()))
           .slice(0, 5)
           .map((a: any) => ({
             name: a.patient?.fullName,
@@ -140,8 +133,7 @@ const DashBoardPage: React.FC = () => {
 
   const dateCellRender = (value: any) => {
     const count = appointments.filter(
-      (a) =>
-        dayjs(a.time.split(" - ")[1], "DD/MM/YYYY").date() === value.date()
+      (a) => dayjs(a.time.split(" - ")[1], "DD/MM/YYYY").date() === value.date()
     ).length;
 
     return count ? <Badge status="success" text={`${count} lịch hẹn`} /> : null;
@@ -197,11 +189,7 @@ const DashBoardPage: React.FC = () => {
         {/* ===== LEFT ===== */}
         <Col xs={24} lg={16}>
           <Card title="Lịch hẹn gần đây" style={{ marginBottom: 16 }}>
-            <Table
-              columns={columns}
-              dataSource={appointments}
-              pagination={false}
-            />
+            <Table columns={columns} dataSource={appointments} pagination={false} />
           </Card>
 
           <Card title="Tỷ lệ hoàn thành (demo)">
