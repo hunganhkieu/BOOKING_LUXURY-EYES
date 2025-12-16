@@ -1,5 +1,6 @@
 import {
   CalendarOutlined,
+
   EnvironmentOutlined,
   HomeOutlined,
   SearchOutlined,
@@ -382,6 +383,7 @@ const BookingAppointmentPage = () => {
                     }
                     return false;
                   }}
+
                 >
                   <Select.OptGroup label="Khám cho bản thân">
                     <Select.Option
