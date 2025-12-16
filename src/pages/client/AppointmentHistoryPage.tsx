@@ -5,9 +5,7 @@ import {
   CloseCircleOutlined,
   EnvironmentOutlined,
   FileTextOutlined,
-  FilterOutlined,
   InfoCircleOutlined,
-  SearchOutlined,
   SyncOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -44,7 +42,7 @@ export type AppointmentStatus =
 
 const AppointmentHistoryPage = () => {
   const [activeTab, setActiveTab] = useState<string>("all"); // tab đang được chọn
-  const [searchText, setSearchText] = useState<string>(""); // tìm kiếm
+  // const [searchText, setSearchText] = useState<string>(""); // tìm kiếm
   // bấm xem chi tiết, hủy lịch
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
@@ -262,7 +260,7 @@ const AppointmentHistoryPage = () => {
         </div>
 
         {/* Search & Filter */}
-        <Card className="mb-6 shadow-sm">
+        {/* <Card className="mb-6 shadow-sm">
           <div className="flex flex-wrap gap-4">
             <Input
               size="large"
@@ -276,7 +274,7 @@ const AppointmentHistoryPage = () => {
               Lọc nâng cao
             </Button>
           </div>
-        </Card>
+        </Card> */}
 
         {/* Tabs */}
         <Tabs

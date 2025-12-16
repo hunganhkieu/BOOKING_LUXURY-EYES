@@ -147,13 +147,13 @@ const HomePage = () => {
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Về Bệnh viện Đại học Y Hà Nội
+              Phòng khám chuyên khoa mắt Luxury Eyes
             </h2>
             <p className="text-gray-600 mb-4">
-              Bệnh viện Đại học Y Hà Nội là cơ sở y tế hàng đầu với hơn 70 năm
-              kinh nghiệm trong việc chăm sóc sức khỏe cộng đồng. Chúng tôi tự
-              hào về đội ngũ y bác sĩ giàu kinh nghiệm, trang thiết bị hiện đại
-              và dịch vụ chăm sóc tận tâm.
+              Phòng khám chuyên khoa mắt Luxury Eyes là cơ sở y tế hàng đầu với
+              hơn 5 năm kinh nghiệm trong việc chăm sóc sức khỏe cộng đồng.
+              Chúng tôi tự hào về đội ngũ y bác sĩ giàu kinh nghiệm, trang thiết
+              bị hiện đại và dịch vụ chăm sóc tận tâm.
             </p>
             <ul className="space-y-2 mb-6">
               <li className="flex items-center gap-2">
@@ -173,11 +173,11 @@ const HomePage = () => {
                 <span>Quy trình khám chữa bệnh chuyên nghiệp</span>
               </li>
             </ul>
-            <Link to="/about">
+            {/* <Link to="/about">
               <Button type="primary" size="large">
                 Tìm hiểu thêm
               </Button>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>
@@ -214,11 +214,11 @@ const HomePage = () => {
           ))}
         </div>
         <div className="text-center mt-8">
-          <Link to="/news">
+          {/* <Link to="/news">
             <Button type="link" size="large">
               Xem tất cả tin tức <RightOutlined />
             </Button>
-          </Link>
+          </Link> */}
         </div>
       </div>
     </div>
