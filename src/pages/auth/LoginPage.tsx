@@ -1,95 +1,84 @@
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { Button, Card, Checkbox, Form, Input } from "antd";
-import { Link } from "react-router-dom";
+import { Button, Card, Form, Input, message } from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../../api";
+import { useDispatch } from "react-redux";
+import { setAuth } from "../../app/features/authSlice";
+import type { LoginPayload } from "../../types/User";
+
 
 const LoginPage = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        {/* Logo & Title */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Đăng nhập</h1>
-          <p className="text-gray-500 mt-1">Chào mừng bạn trở lại</p>
-        </div>
+  const nav = useNavigate();
+  const dispatch = useDispatch();
+  const onFinish = async (values: LoginPayload) => {
+    try {
+      const res = await api.post("/auth/login", {
+        email: values.email,
+        password: values.password,
+      });
 
-        {/* Login Form */}
-        <Form name="login" layout="vertical" requiredMark={false}>
-          <Form.Item
-            label="Email hoặc Số điện thoại"
-            name="username"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập email hoặc số điện thoại!",
-              },
-            ]}
-          >
-            <Input
-              prefix={<MailOutlined className="text-gray-400" />}
-              placeholder="example@email.com hoặc 0123456789"
-              size="large"
-            />
+      if (!res.data.success) {
+        message.error("Sai email hoặc mật khẩu!");
+        return;
+      }
+
+      const { user, accessToken } = res.data.data;
+      dispatch(setAuth({ user, accessToken }));
+
+      localStorage.setItem("accessToken", res.data.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(res.data.data.user));
+
+      if (res.data.data.user.role === "admin") {
+        nav("/admin/dashboard");
+      } else {
+        nav("/");
+      }
+
+      message.success("Đăng nhập thành công!");
+    } catch (err) {
+      console.log(err);
+      message.error("Đăng nhập thất bại!");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#eef1f6",
+      }}
+    >
+      <Card style={{ width: 400, padding: 30 }}>
+        <h2 style={{ textAlign: "center", marginBottom: 20 }}>Đăng nhập</h2>
+
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item label="Email" name="email" rules={[{ required: true }]}>
+            <Input type="email" placeholder="Nhập email" />
           </Form.Item>
 
           <Form.Item
             label="Mật khẩu"
             name="password"
-            rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+            rules={[{ required: true }]}
           >
-            <Input.Password
-              prefix={<LockOutlined className="text-gray-400" />}
-              placeholder="Nhập mật khẩu"
-              size="large"
-            />
+            <Input.Password placeholder="Nhập mật khẩu" />
           </Form.Item>
 
-          <Form.Item>
-            <div className="flex justify-between items-center">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox>Ghi nhớ đăng nhập</Checkbox>
-              </Form.Item>
-              <Link
-                to="/forgot-password"
-                className="text-blue-600 hover:text-blue-700"
-              >
-                Quên mật khẩu?
-              </Link>
-            </div>
-          </Form.Item>
+          <Button type="primary" htmlType="submit" block size="large">
+            Đăng nhập
+          </Button>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" size="large" block>
-              Đăng nhập
-            </Button>
-          </Form.Item>
+          <Button block size="large" style={{ marginTop: 12 }}>
+            <Link to="/" style={{ display: "block" }}>
+              Quay về trang chủ
+            </Link>
+          </Button>
         </Form>
 
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Hoặc</span>
-          </div>
-        </div>
-
-        {/* Register Link */}
-        <div className="text-center">
-          <span className="text-gray-600">Chưa có tài khoản? </span>
-          <Link
-            to="/auth/register"
-            className="text-blue-600 hover:text-blue-700 font-semibold"
-          >
-            Đăng ký ngay
-          </Link>
-        </div>
-
-        {/* Back to Home */}
-        <div className="text-center mt-4">
-          <Link to="/" className="text-gray-500 hover:text-gray-700 text-sm">
-            ← Quay về trang chủ
-          </Link>
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          Chưa có tài khoản? <Link to="/auth/register">Đăng ký</Link>
         </div>
       </Card>
     </div>

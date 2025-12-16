@@ -1,177 +1,140 @@
 import {
   CalendarOutlined,
-  CloudOutlined,
+
   EnvironmentOutlined,
-  FileImageOutlined,
   HomeOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  MedicineBoxOutlined,
-  PhoneOutlined,
   SearchOutlined,
-  SunOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import {
-  Avatar,
-  Button,
-  Card,
-  DatePicker,
-  Input,
-  Modal,
-  Radio,
-  Select,
-} from "antd";
-import { useState } from "react";
+import { Avatar, Button, Card, DatePicker, Input, message, Select } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useAppSelector } from "../../app/hook";
+import {
+  useCreateBookingMutation,
+  useGetBookingByScheduleIdQuery,
+} from "../../app/services/appointmentApi";
+import { useGetDoctorsQuery } from "../../app/services/doctorApi";
+import {
+  useCreatePatientProfileMutation,
+  useGetPatientProfileQuery,
+} from "../../app/services/patientProfile";
+import {
+  useGetScheduleDoctorIdQuery,
+  useGetSchedulesQuery,
+} from "../../app/services/scheduleApi";
+import AddPatientModal from "../../components/AddPatientModal";
+import DoctorList from "../../components/DoctorList";
+import TimeSlotPicker from "../../components/TimeSlotPicker";
+import type { BookingPayload } from "../../types/Booking";
+import type { Doctor } from "../../types/Doctor";
+import type {
+  CreatePatientInput,
+  PatientResponse,
+} from "../../types/PatientProfile";
+import type {
+  DoctorSchedule,
+  SelectedSchedule,
+  TimeSlot,
+} from "../../types/Schedule";
+import type { AppointmentStatus } from "./AppointmentHistoryPage";
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
-
-interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  price: string;
-}
-
-interface Schedule {
-  date: string;
-  time: string;
-  location: string;
-  room: string;
-  service: string;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  dateOfBirth?: string;
-  gender?: string;
-  identityCard?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relation: "self" | "family";
-}
-
 const BookingAppointmentPage = () => {
+  //search doctor
+  const [inputSearch, setInputSearch] = useState<string>("");
+  const [delaySearch, setDelaySearch] = useState<string>("");
+
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+
+  //doctors
+  const { data, isLoading, isFetching, isError } = useGetDoctorsQuery({
+    inputSearch: delaySearch,
+  });
+  const doctors: Doctor[] = useMemo(() => data?.data ?? [], [data]);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+
+  //schedule
+  const { data: schedulesData } = useGetSchedulesQuery();
+  const listSchedule: DoctorSchedule[] = useMemo(
+    () => schedulesData?.data ?? [],
+    [schedulesData]
+  );
+  const { data: schedule } = useGetScheduleDoctorIdQuery(
+    selectedDoctor?._id as string,
+    {
+      skip: !selectedDoctor?._id,
+    }
+  );
+  const scheduleDoctorId: DoctorSchedule[] = schedule?.data ?? [];
+  const scheduleItem = scheduleDoctorId[0];
+
   const [selectedPerson, setSelectedPerson] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
-    null
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedSchedule, setSelectedSchedule] =
+    useState<SelectedSchedule | null>(null);
+
+  // appointment ScheduleId
+  const { data: getBookingBySlotId } = useGetBookingByScheduleIdQuery(
+    scheduleItem?._id,
+    {
+      skip: !scheduleItem?._id,
+    }
+  );
+  const getBookingBySchedIdData = useMemo(
+    () => getBookingBySlotId?.data ?? [],
+    [getBookingBySlotId]
   );
   const [symptoms, setSymptoms] = useState<string>("");
-  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-  const [patients, setPatients] = useState<Patient[]>([
-    {
-      id: "self",
-      name: "Nguyễn Văn A",
-      dateOfBirth: "01/01/1990",
-      gender: "male",
-      identityCard: "001234567890",
-      email: "nguyenvana@email.com",
-      phone: "0123456789",
-      address: "Số 1, Đường ABC, Quận 1, TP.HCM",
-      relation: "self",
-    },
-  ]);
 
-  const [newPatient, setNewPatient] = useState({
-    name: "",
-    dateOfBirth: "",
-    gender: "",
-    identityCard: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
+  // patient-profile
+  const user = useAppSelector((state) => state.auth.user);
+  const { data: patientProfileResponse } = useGetPatientProfileQuery();
+  const PatientProData: PatientResponse[] = patientProfileResponse?.data ?? [];
+  const [createPatientProfile, { isLoading: isCreatingPatient }] =
+    useCreatePatientProfileMutation();
+
+  const [createBooking] = useCreateBookingMutation();
+
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
 
   const nav = useNavigate();
 
-  const doctors: Doctor[] = [
-    {
-      id: "1",
-      name: "TS Vũ Việt Hằng",
-      specialty: "Y học cổ truyền",
-      price: "350.000",
-    },
-    {
-      id: "2",
-      name: "ThsBS Vũ Văn Tiến",
-      specialty: "Tai mũi họng",
-      price: "350.000",
-    },
-    {
-      id: "3",
-      name: "ThsBSNT Vũ Trung Hải",
-      specialty: "Ngoại Thần kinh - Cột sống",
-      price: "120.000",
-    },
-    {
-      id: "4",
-      name: "ThsBS Vũ Trọng Tùng",
-      specialty: "Bác sỹ gia đình",
-      price: "120.000",
-    },
-    {
-      id: "5",
-      name: "ThsBSNT Vũ Thùy Linh",
-      specialty: "Dị ứng - Miễn dịch lâm sàng",
-      price: "120.000",
-    },
-    {
-      id: "6",
-      name: "BSCKII Vũ Thu Phương",
-      specialty: "Da liễu",
-      price: "350.000",
-    },
-  ];
-
-  const scheduleData = {
-    dates: [
-      { label: "Thứ 6", date: "28-11" },
-      { label: "Thứ 7", date: "29-11" },
-      { label: "Thứ 2", date: "01-12" },
-      { label: "Thứ 3", date: "02-12" },
-    ],
-    morningSlots: [
-      "06:30",
-      "07:00",
-      "07:30",
-      "08:00",
-      "08:30",
-      "09:00",
-      "09:30",
-      "10:00",
-      "10:30",
-    ],
-    afternoonSlots: [
-      "13:00",
-      "13:30",
-      "14:00",
-      "14:30",
-      "15:00",
-      "15:30",
-      "16:00",
-      "16:30",
-    ],
-  };
-
+  // chọn bác sĩ
   const handleDoctorSelect = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
     setSelectedSchedule(null);
   };
 
-  const handleTimeSelect = (date: string, time: string) => {
-    if (selectedDoctor) {
+  //format date
+  const formatDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+  const handleTimeSelect = (slot: TimeSlot) => {
+    if (selectedDoctor && scheduleItem) {
+      const formattedDate = formatDate(slot.date);
+
+      setSelectedSlot(slot);
+
       setSelectedSchedule({
-        date: `${time} - ${date}/2025`,
-        time: time,
-        location: "Trung tâm Y khoa số 1 Tôn Thất Tùng",
-        room: "Phòng khám YHCT 203 - Phòng 203, Tầng 2, Nhà A5",
-        service: "Khám Y học cổ truyền [PKI]",
+        scheduleSlotId: slot.scheduleSlotId,
+        date: slot.date,
+        time: slot.time,
+        location: "Vân Canh - Hoài Đức",
+        room: scheduleItem.roomName,
+        displayDate: `${slot.time} - ${formattedDate}`,
       });
     }
   };
@@ -181,6 +144,7 @@ const BookingAppointmentPage = () => {
     setSelectedSchedule(null);
   };
 
+  // gọi form thêm người bệnh
   const handlePatientChange = (value: string) => {
     if (value === "add-new") {
       setShowAddPatientModal(true);
@@ -189,30 +153,205 @@ const BookingAppointmentPage = () => {
     }
   };
 
-  const handleAddPatient = () => {
-    if (newPatient.name && newPatient.phone) {
-      const patient: Patient = {
-        id: `patient-${Date.now()}`,
-        ...newPatient,
-        relation: "family",
-      };
-      setPatients([...patients, patient]);
-      setSelectedPerson(patient.id);
+  // thêm người bệnh
+  const handleAddPatient = async (values: CreatePatientInput) => {
+    try {
+      const res = await createPatientProfile(values).unwrap();
+      message.success("thêm thành công");
+      setSelectedPerson(res.data._id);
       setShowAddPatientModal(false);
-      setNewPatient({
-        name: "",
-        dateOfBirth: "",
-        gender: "",
-        identityCard: "",
-        email: "",
-        phone: "",
-        address: "",
-      });
+    } catch (error) {
+      console.error("Error creating patient:", error);
     }
   };
 
+  // delay tìm kiếm
+  useEffect(() => {
+    const timeout = setTimeout(() => setDelaySearch(inputSearch), 300);
+    return () => clearTimeout(timeout);
+  }, [inputSearch]);
+
+  // reset bộ lọc
+  const handleReset = () => {
+    setInputSearch("");
+  };
+
+  //bắt dữ liệu thay đổi khi chọn ngày
+  const handleRangeChange = (
+    dates: (Dayjs | null)[] | null
+    // dateStrings: [string, string]
+  ) => {
+    if (dates && dates[0] && dates[1]) {
+      setFromDate(dates[0].format("YYYY-MM-DD"));
+      setToDate(dates[1].format("YYYY-MM-DD"));
+
+      setSelectedDoctor(null);
+      setSelectedSchedule(null);
+    } else {
+      setFromDate("");
+      setToDate("");
+    }
+  };
+
+  // ko chọn ngày trong quá khứ
+  const disabledDate = (current: Dayjs) => {
+    return current && current < dayjs().startOf("day");
+  };
+
+  // lọc bác sĩ theo ngày
+  const filteredDoctors = useMemo(() => {
+    if (!fromDate || !toDate) {
+      return doctors.map((doc) => ({ ...doc, timeSlots: [] }));
+    }
+
+    const start = fromDate; // YYYY-MM-DD
+    const end = toDate;
+
+    // Tìm các bác sĩ có slot AVAILABLE trong khoảng ngày
+    const doctorsWithAvailableSlots = doctors
+      .map((doc) => {
+        // Tìm lịch của bác sĩ này
+        const doctorSchedule = listSchedule.find((s) => s.doctorId === doc._id);
+        if (!doctorSchedule || !doctorSchedule.timeSlots) {
+          return { ...doc, timeSlots: [] };
+        }
+
+        const availableSlotsInRange = doctorSchedule.timeSlots.filter(
+          (slot) => {
+            if (slot.status !== "AVAILABLE") return false;
+            const slotDate = slot.date.split("T")[0];
+            return slotDate >= start && slotDate <= end;
+          }
+        );
+
+        return {
+          ...doc,
+          timeSlots: availableSlotsInRange,
+        };
+      })
+      .filter((doc) => doc.timeSlots.length > 0); // Chỉ giữ bác sĩ có lịch trống
+
+    return doctorsWithAvailableSlots;
+  }, [doctors, listSchedule, fromDate, toDate]);
+
+  // check trùng lịch
+  const availableSlots = useMemo(() => {
+    if (!scheduleItem?.timeSlots || !getBookingBySchedIdData) {
+      return [];
+    }
+
+    const today = dayjs().startOf("day");
+
+    return scheduleItem.timeSlots
+      .filter((slot) => {
+        // Chỉ lấy slot từ hôm nay trở đi
+        const slotDay = dayjs(slot.date).startOf("day");
+        return slotDay.isSame(today) || slotDay.isAfter(today);
+      })
+      .filter((slot) => {
+        // Chỉ lấy slot còn AVAILABLE
+        if (slot.status !== "AVAILABLE") return false;
+
+        const slotDate = dayjs(slot.date).format("YYYY-MM-DD");
+
+        // Kiểm tra đã có appointment nào đặt chưa
+        const isBooked = getBookingBySchedIdData.some((apm: BookingPayload) => {
+          const apmDate = dayjs(apm.dateTime).format("YYYY-MM-DD");
+          return (
+            apmDate === slotDate &&
+            apm.time === slot.time &&
+            [
+              "PENDING",
+              "CONFIRM",
+              "CHECKIN",
+              "DONE",
+              "REQUEST-CANCELED",
+            ].includes(apm.status)
+          );
+        });
+        return !isBooked;
+      });
+  }, [scheduleItem?.timeSlots, getBookingBySchedIdData]);
+
+  //đặt lịch
+  const handleConfirmBooking = async () => {
+    if (!selectedPerson) {
+      message.error("Vui lòng chọn người tới khám");
+      return false;
+    }
+
+    if (!selectedDoctor) {
+      message.error("Vui lòng chọn bác sĩ");
+      return false;
+    }
+
+    if (!selectedSchedule) {
+      message.error("Vui lòng chọn lịch khám");
+      return false;
+    }
+
+    try {
+      const payload = {
+        scheduleId: scheduleItem._id,
+        scheduleSlotId: Number(selectedSchedule.scheduleSlotId) || 0,
+        dateTime: selectedSchedule?.date ?? "",
+        time: selectedSchedule?.time ?? "",
+        blockTime: 30,
+        location: selectedSchedule?.location ?? "",
+        status: "PENDING" as AppointmentStatus,
+        appointmentMethod: "DIRECT",
+        symptoms: symptoms,
+        payment: {
+          totalAmount: Number(selectedDoctor?.price) || 0,
+          paymentMethod: "PAY_AT_CLINIC",
+          paymentStatus: "UNPAID",
+        },
+        doctor: {
+          id: selectedDoctor?._id ?? "",
+          name: selectedDoctor?.name ?? "",
+          avatar: selectedDoctor?.avatar ?? "",
+          experience_year: Number(selectedDoctor?.experience_year) || 0,
+        },
+        room: {
+          id: scheduleItem.roomId ?? 1,
+          name: scheduleItem.roomName,
+        },
+        patient: {
+          fullName:
+            PatientProData.find((p) => p._id === selectedPerson)?.fullName ??
+            user?.fullName ??
+            "",
+          dateOfBirth:
+            PatientProData.find((p) => p._id === selectedPerson)?.dateOfBirth ??
+            user?.dateOfBirth ??
+            "",
+          gender:
+            PatientProData.find((p) => p._id === selectedPerson)?.gender ??
+            user?.gender ??
+            "",
+          phone:
+            PatientProData.find((p) => p._id === selectedPerson)?.phone ??
+            user?.phone ??
+            "",
+        },
+      };
+      if (!confirm("Xác nhận đặt lịch khám!")) return false;
+
+      await createBooking(payload);
+      message.success("Đặt lịch thành công!");
+      nav("/lich-kham");
+    } catch (error) {
+      console.log(error);
+      message.error("Đặt lịch thất bại, vui lòng thử lại sau");
+    }
+
+    return true;
+  };
+  if (isLoading) return <div className="text-center mt-3">Loading...</div>;
+  if (isError)
+    return <div className="text-center mt-3">Error loading doctors</div>;
   return (
-    <div className="min-h-screen bg-gray-50 mt-4">
+    <div className="min-h-screen bg-gray-50 my-4">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid lg:grid-cols-12 gap-6">
           {/* Left Sidebar - Filters */}
@@ -237,38 +376,35 @@ const BookingAppointmentPage = () => {
                   size="large"
                   placeholder="Tìm kiếm..."
                   showSearch
-                  filterOption={(input, option) =>
-                    String(option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
+                  filterOption={(input, option) => {
+                    const label = option?.label;
+                    if (typeof label === "string") {
+                      return label.toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
+
                 >
                   <Select.OptGroup label="Khám cho bản thân">
-                    {patients
-                      .filter((p) => p.relation === "self")
-                      .map((patient) => (
-                        <Select.Option
-                          key={patient.id}
-                          value={patient.id}
-                          label={patient.name}
-                        >
-                          {patient.name}
-                        </Select.Option>
-                      ))}
+                    <Select.Option
+                      key={user?._id}
+                      value={user?._id}
+                      label={user?.fullName}
+                    >
+                      {user?.fullName}
+                    </Select.Option>
                   </Select.OptGroup>
 
                   <Select.OptGroup label="Khám cho người thân">
-                    {patients
-                      .filter((p) => p.relation === "family")
-                      .map((patient) => (
-                        <Select.Option
-                          key={patient.id}
-                          value={patient.id}
-                          label={patient.name}
-                        >
-                          {patient.name}
-                        </Select.Option>
-                      ))}
+                    {PatientProData.map((patient) => (
+                      <Select.Option
+                        key={patient._id}
+                        value={patient._id}
+                        label={patient.fullName}
+                      >
+                        {patient.fullName}
+                      </Select.Option>
+                    ))}
                     <Select.Option
                       value="add-new"
                       className="text-blue-600 font-semibold"
@@ -288,6 +424,16 @@ const BookingAppointmentPage = () => {
                   placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
                   className="w-full"
                   size="large"
+                  disabledDate={disabledDate}
+                  value={
+                    fromDate && toDate
+                      ? [
+                          dayjs(fromDate, "YYYY-MM-DD"),
+                          dayjs(toDate, "YYYY-MM-DD"),
+                        ]
+                      : undefined
+                  }
+                  onChange={handleRangeChange}
                 />
               </div>
             </Card>
@@ -297,59 +443,46 @@ const BookingAppointmentPage = () => {
           <div className="lg:col-span-6">
             <Card className="shadow-sm">
               {/* Search Bar */}
-              <div className="mb-4 flex gap-2">
+              <div className="mb-4">
                 <Input
                   size="large"
                   placeholder="Tìm kiếm theo tên bác sĩ..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   className="flex-1"
+                  maxLength={100}
+                  value={inputSearch}
+                  onChange={(e) => setInputSearch(e.target.value)}
                 />
-                <Button size="large" icon={<UserOutlined />}>
-                  Tìm thấy <span className="font-semibold">412 bác sĩ</span> phù
-                  hợp
-                </Button>
+                <div className=" my-2 flex justify-start gap-2">
+                  <Button size="large" icon={<UserOutlined />}>
+                    Tìm thấy
+                    <span className="font-semibold">
+                      {filteredDoctors.length} bác sĩ
+                    </span>{" "}
+                    phù hợp
+                  </Button>
+
+                  <Button size="large" onClick={handleReset}>
+                    Xóa bộ lọc
+                  </Button>
+                </div>
+
+                {/* <Button
+                  type="primary"
+                  onClick={() => refetch()}
+                  loading={isLoading}
+                >
+                  Reset dữ liệu
+                </Button> */}
               </div>
 
               {/* Doctor List */}
               {!selectedDoctor && (
-                <div className="space-y-3">
-                  {doctors.map((doctor) => (
-                    <Card
-                      key={doctor.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      styles={{ body: { padding: "16px" } }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Avatar size={48} icon={<UserOutlined />} />
-                          <div>
-                            <h3 className="font-semibold text-gray-800">
-                              {doctor.name}
-                            </h3>
-                            <p className="text-sm text-blue-600">
-                              Chuyên khoa: {doctor.specialty}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-xs text-gray-500">Giá khám:</p>
-                            <p className="text-lg font-bold text-orange-500">
-                              {doctor.price} đ
-                            </p>
-                          </div>
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => handleDoctorSelect(doctor)}
-                          >
-                            Chọn
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                <DoctorList
+                  doctors={filteredDoctors}
+                  isFetching={isFetching}
+                  handleDoctorSelect={handleDoctorSelect}
+                />
               )}
 
               {/* Schedule View */}
@@ -365,7 +498,7 @@ const BookingAppointmentPage = () => {
                             {selectedDoctor.name}
                           </h3>
                           <p className="text-sm text-blue-600">
-                            Chuyên khoa: {selectedDoctor.specialty}
+                            Kinh nghiệm: {selectedDoctor.experience_year} năm
                           </p>
                         </div>
                       </div>
@@ -388,58 +521,34 @@ const BookingAppointmentPage = () => {
                   </Card>
 
                   {/* Date Selection */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Chọn ngày khám:
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {scheduleData.dates.map((day, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedDate(idx)}
-                          className={`px-3 py-3 rounded-lg border-2 transition-all ${
-                            selectedDate === idx
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:border-blue-500"
-                          }`}
-                        >
-                          <div className="text-center">
-                            <div className="font-semibold text-sm">
-                              {day.label}
-                            </div>
-                            <div className="text-xs mt-1">{day.date}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* Location Info */}
                   <Card className="mb-4 bg-gray-50">
                     <h3 className="font-semibold mb-3">
-                      Trung tâm Y khoa số 1 Tôn Thất Tùng
+                      Phòng khám chuyên khoa mắt Luxury Eyes
                     </h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-start gap-2">
                         <EnvironmentOutlined className="text-blue-600 mt-1" />
-                        <span>
-                          Địa chỉ: Số 1 Tôn Thất Tùng, Đống Đa, Hà Nội
-                        </span>
+                        <span>Địa chỉ: Vân Canh - Hoài Đức</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <HomeOutlined className="text-blue-600 mt-1" />
-                        <span>Phòng: Phòng khám YHCT 203</span>
+                        <span>
+                          Phòng khám:{" "}
+                          {scheduleItem ? scheduleItem.roomName : "Chưa rõ"}
+                        </span>
                       </div>
-                      <div className="flex items-start gap-2">
+                      {/* <div className="flex items-start gap-2">
                         <MedicineBoxOutlined className="text-blue-600 mt-1" />
                         <span>Dịch vụ: Khám Y học cổ truyền [PKI]</span>
-                      </div>
+                      </div> */}
                       <div className="flex items-start gap-2">
                         <span className="text-blue-600 mt-1">💰</span>
                         <span>
                           Giá khám:{" "}
                           <span className="text-orange-500 font-semibold">
-                            350.000 đ
+                            {selectedDoctor.price} đ
                           </span>
                         </span>
                       </div>
@@ -447,50 +556,17 @@ const BookingAppointmentPage = () => {
                   </Card>
 
                   {/* Morning Slots */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <SunOutlined className="text-yellow-500" />
-                      <span className="font-semibold">Sáng</span>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2">
-                      {scheduleData.morningSlots.map((time, idx) => (
-                        <Button
-                          key={idx}
-                          type={
-                            selectedSchedule?.time === time
-                              ? "primary"
-                              : "default"
-                          }
-                          onClick={() => handleTimeSelect("28/11", time)}
-                        >
-                          {time}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Afternoon Slots */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CloudOutlined className="text-blue-500" />
-                      <span className="font-semibold">Chiều</span>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2">
-                      {scheduleData.afternoonSlots.map((time, idx) => (
-                        <Button
-                          key={idx}
-                          type={
-                            selectedSchedule?.time === time
-                              ? "primary"
-                              : "default"
-                          }
-                          onClick={() => handleTimeSelect("28/11", time)}
-                        >
-                          {time}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                  <TimeSlotPicker
+                    scheduleItem={{
+                      ...scheduleItem,
+                      timeSlots: availableSlots,
+                    }}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    selectedSchedule={selectedSlot}
+                    handleTimeSelect={handleTimeSelect}
+                  />
                 </div>
               )}
             </Card>
@@ -503,7 +579,7 @@ const BookingAppointmentPage = () => {
                 Tóm tắt lịch khám
               </h2>
 
-              {selectedSchedule ? (
+              {selectedSchedule && selectedDoctor ? (
                 <div className="space-y-4">
                   {/* Doctor Info */}
                   <div className="flex items-center gap-3 pb-4 border-b">
@@ -520,24 +596,29 @@ const BookingAppointmentPage = () => {
 
                   {/* Schedule Details */}
                   <div className="space-y-3">
+                    {/* Thời gian - Đã sửa: dùng displayDate */}
                     <div className="flex items-start gap-2">
                       <CalendarOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Thời gian</p>
-                        <p className="font-medium">{selectedSchedule.date}</p>
+                        <p className="text-xs text-gray-500">Thời gian khám</p>
+                        <p className="font-medium text-lg text-blue-700">
+                          {selectedSchedule.displayDate}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Địa điểm */}
                     <div className="flex items-start gap-2">
                       <EnvironmentOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Địa điểm</p>
+                        <p className="text-xs text-gray-500">Địa chỉ</p>
                         <p className="font-medium">
                           {selectedSchedule.location}
                         </p>
                       </div>
                     </div>
 
+                    {/* Phòng khám */}
                     <div className="flex items-start gap-2">
                       <HomeOutlined className="text-blue-600 mt-1" />
                       <div className="flex-1">
@@ -545,30 +626,22 @@ const BookingAppointmentPage = () => {
                         <p className="font-medium">{selectedSchedule.room}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-start gap-2">
-                      <MedicineBoxOutlined className="text-blue-600 mt-1" />
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500">Dịch vụ</p>
-                        <p className="font-medium">
-                          {selectedSchedule.service}
-                        </p>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Symptoms */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vấn đề sức khỏe gặp phải *
+                      Vấn đề gặp phải
                     </label>
                     <TextArea
                       rows={4}
+                      maxLength={255}
+                      showCount
                       placeholder="Mô tả ngắn gọn triệu chứng..."
                       value={symptoms}
                       onChange={(e) => setSymptoms(e.target.value)}
                     />
-                    <div className="flex items-center justify-between mt-1">
+                    {/* <div className="flex items-center justify-between mt-1">
                       <Button
                         type="link"
                         size="small"
@@ -579,7 +652,7 @@ const BookingAppointmentPage = () => {
                       <span className="text-xs text-gray-500">
                         Tối đa 3 ảnh
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Confirm Button */}
@@ -588,7 +661,12 @@ const BookingAppointmentPage = () => {
                     size="large"
                     block
                     className="bg-orange-500 hover:bg-orange-600 border-0"
-                    onClick={() => nav("/lich-kham")}
+                    onClick={async () => {
+                      const canProceed = await handleConfirmBooking();
+                      if (canProceed) {
+                        nav("/lich-kham");
+                      }
+                    }}
                   >
                     Xác nhận đặt khám
                   </Button>
@@ -609,146 +687,14 @@ const BookingAppointmentPage = () => {
       </div>
 
       {/* Add Patient Modal */}
-      <Modal
-        title="Thêm mới người bệnh"
-        open={showAddPatientModal}
+      <AddPatientModal
+        visible={showAddPatientModal}
         onCancel={() => {
           setShowAddPatientModal(false);
-          setNewPatient({
-            name: "",
-            dateOfBirth: "",
-            gender: "",
-            identityCard: "",
-            email: "",
-            phone: "",
-            address: "",
-          });
         }}
-        onOk={handleAddPatient}
-        okText="Thêm người bệnh"
-        cancelText="Hủy"
-        width={800}
-      >
-        <div className="space-y-4 mt-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Họ và tên */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Họ và tên <span className="text-red-500">*</span>
-              </label>
-              <Input
-                size="large"
-                placeholder="Nguyễn Văn A"
-                prefix={<UserOutlined className="text-gray-400" />}
-                value={newPatient.name}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, name: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Ngày sinh */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ngày sinh
-              </label>
-              <DatePicker
-                size="large"
-                placeholder="Chọn ngày sinh"
-                className="w-full"
-                format="DD/MM/YYYY"
-                onChange={(_, dateString) =>
-                  setNewPatient({
-                    ...newPatient,
-                    dateOfBirth: dateString as string,
-                  })
-                }
-              />
-            </div>
-
-            {/* Giới tính */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Giới tính
-              </label>
-              <Radio.Group
-                size="large"
-                value={newPatient.gender}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, gender: e.target.value })
-                }
-              >
-                <Radio value="male">Nam</Radio>
-                <Radio value="female">Nữ</Radio>
-                <Radio value="other">Khác</Radio>
-              </Radio.Group>
-            </div>
-
-            {/* CCCD/CMND */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                CCCD/CMND
-              </label>
-              <Input
-                size="large"
-                placeholder="Số CCCD/CMND"
-                prefix={<IdcardOutlined className="text-gray-400" />}
-                value={newPatient.identityCard}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, identityCard: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <Input
-                size="large"
-                placeholder="example@email.com"
-                prefix={<MailOutlined className="text-gray-400" />}
-                value={newPatient.email}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, email: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Số điện thoại */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số điện thoại <span className="text-red-500">*</span>
-              </label>
-              <Input
-                size="large"
-                placeholder="0123456789"
-                prefix={<PhoneOutlined className="text-gray-400" />}
-                value={newPatient.phone}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, phone: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Địa chỉ */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Địa chỉ
-              </label>
-              <Input
-                size="large"
-                placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                value={newPatient.address}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, address: e.target.value })
-                }
-              />
-            </div>
-          </div>
-        </div>
-      </Modal>
+        onSubmit={handleAddPatient}
+        confirmLoading={isCreatingPatient}
+      />
     </div>
   );
 };
