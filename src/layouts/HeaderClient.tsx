@@ -31,12 +31,12 @@ const HeaderClient = () => {
   };
   const menuItems: MenuProps["items"] = [
     { key: "home", label: <Link to="/">Trang chủ</Link> },
-    { key: "about", label: <Link to="/about">Giới thiệu</Link> },
-    { key: "services", label: <Link to="/services">Dịch vụ</Link> },
-    { key: "departments", label: <Link to="/departments">Chuyên khoa</Link> },
-    { key: "doctors", label: <Link to="/doctors">Bác sĩ</Link> },
-    { key: "news", label: <Link to="/news">Tin tức</Link> },
-    { key: "contact", label: <Link to="/contact">Liên hệ</Link> },
+    // { key: "about", label: <Link to="/about">Giới thiệu</Link> },
+    // { key: "services", label: <Link to="/services">Dịch vụ</Link> },
+    // { key: "departments", label: <Link to="/departments">Chuyên khoa</Link> },
+    // { key: "doctors", label: <Link to="/doctors">Bác sĩ</Link> },
+    // { key: "news", label: <Link to="/news">Tin tức</Link> },
+    // { key: "contact", label: <Link to="/contact">Liên hệ</Link> },
   ];
 
   const loggedMenu: MenuProps["items"] = [
