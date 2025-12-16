@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
 import type { User } from "../../types/User";
 
+
 const RegisterPage = () => {
   const nav = useNavigate();
 
