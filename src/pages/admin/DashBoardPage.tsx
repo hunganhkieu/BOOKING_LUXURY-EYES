@@ -35,7 +35,6 @@ const DashBoardPage: React.FC = () => {
     completedThisMonth: 0,
   });
 
-  /* ================== FETCH DATA ================== */
 
   const fetchDashboard = async () => {
     try {
@@ -51,7 +50,6 @@ const DashBoardPage: React.FC = () => {
 
       const today = dayjs().format("YYYY-MM-DD");
 
-      // ===== STATS =====
       setStats({
         todayAppointments: appointmentsData.filter(
           (a: any) => dayjs(a.dateTime).format("YYYY-MM-DD") === today
@@ -65,7 +63,6 @@ const DashBoardPage: React.FC = () => {
         ).length,
       });
 
-      // ===== TABLE RECENT =====
       setAppointments(
         appointmentsData.slice(0, 5).map((a: any) => ({
           key: a._id,
@@ -77,7 +74,6 @@ const DashBoardPage: React.FC = () => {
         }))
       );
 
-      // ===== UPCOMING =====
       setUpcoming(
         appointmentsData
           .filter((a: any) => dayjs(a.dateTime).isAfter(dayjs()))
@@ -97,7 +93,6 @@ const DashBoardPage: React.FC = () => {
     fetchDashboard();
   }, []);
 
-  /* ================== TABLE ================== */
 
   const columns = [
     {
