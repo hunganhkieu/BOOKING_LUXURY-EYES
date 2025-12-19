@@ -490,9 +490,7 @@ const AppointmentHistoryPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Mã phiếu:</span>
                   <span className="font-medium">
-                    {`${selectedAppointment._id?.slice(
-                      -4
-                    )}-${selectedAppointment.scheduleId.slice(-2)}`}
+                    {selectedAppointment._id?.slice(-6).toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -611,9 +609,6 @@ const AppointmentHistoryPage = () => {
                 size="large"
               >
                 <Select.Option value="busy">Bận việc đột xuất</Select.Option>
-                <Select.Option value="health">
-                  Sức khỏe không cho phép
-                </Select.Option>
                 <Select.Option value="rescheduled">
                   Muốn đổi lịch khác
                 </Select.Option>

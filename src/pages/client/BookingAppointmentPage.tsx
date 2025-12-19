@@ -87,7 +87,7 @@ const BookingAppointmentPage = () => {
     useState<SelectedSchedule | null>(null);
 
   // appointment ScheduleId
-  const user = useAppSelector((state) => state.auth.user);
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const {
     data: getBookingUserId,
@@ -306,8 +306,9 @@ const BookingAppointmentPage = () => {
 
   //đặt lịch
   const handleConfirmBooking = async () => {
-    if (!user?._id) {
+    if (!user?._id || !isAuthenticated) {
       message.error("Vui lòng đăng nhập");
+      nav("/auth/login");
       return;
     }
     if (!selectedPerson) {
