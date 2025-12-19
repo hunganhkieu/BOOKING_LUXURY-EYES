@@ -1,6 +1,7 @@
 import type { AppointmentStatus } from "../pages/client/AppointmentHistoryPage";
 
 export interface BookingPayload {
+  userId: string;
   scheduleId: string;
   scheduleSlotId: number;
   dateTime: string;
@@ -42,3 +43,11 @@ export interface BookingResponse {
   success: boolean;
   data: BookingPayload[];
 }
+
+export const BLOCK_STATUSES = [
+  "PENDING",
+  "CONFIRM",
+  "CHECKIN",
+  "DONE",
+  "REQUEST-CANCELED",
+];
