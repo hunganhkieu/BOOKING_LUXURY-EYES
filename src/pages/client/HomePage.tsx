@@ -9,13 +9,15 @@ import {
 } from "@ant-design/icons";
 import { Button, Card } from "antd";
 import banner from "../../assets/imgs/banner.png";
-import { useAppSelector } from "../../app/hook";
 import { Link } from "react-router-dom";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
 import type { Doctor } from "../../types/Doctor";
+import { useAppSelector } from "../../app/hook";
 
 const HomePage = () => {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const isAuthenticated =
+    useAppSelector((state) => state.auth.accessToken) ||
+    localStorage.getItem("accessToken");
 
   const { data } = useGetDoctorsQuery();
 
