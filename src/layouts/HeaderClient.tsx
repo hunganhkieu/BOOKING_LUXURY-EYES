@@ -30,7 +30,7 @@ const HeaderClient = () => {
     navigate("/auth/login");
   };
   const menuItems: MenuProps["items"] = [
-    { key: "home", label: <Link to="/">Trang chủ</Link> },
+    // { key: "home", label: <Link to="/">Trang chủ</Link> },
     // { key: "about", label: <Link to="/about">Giới thiệu</Link> },
     // { key: "services", label: <Link to="/services">Dịch vụ</Link> },
     // { key: "departments", label: <Link to="/departments">Chuyên khoa</Link> },

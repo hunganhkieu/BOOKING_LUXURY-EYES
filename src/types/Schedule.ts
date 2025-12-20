@@ -31,3 +31,8 @@ export interface SelectedSchedule {
   room?: string;
   displayDate?: string;
 }
+
+export type TimeSlotUI = TimeSlot & {
+  disabled?: boolean;
+  disabledReason?: string;
+};

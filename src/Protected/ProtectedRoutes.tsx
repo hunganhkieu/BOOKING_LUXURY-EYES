@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 
-interface User {
+export interface User {
   role?: "admin" | "user";
 }
 
-interface AuthRouteProps {
+export interface AuthRouteProps {
   children: ReactNode;
 }
 
@@ -19,7 +19,7 @@ export default function AuthRoute({ children }: AuthRouteProps) {
     if (user.role === "admin") {
       return <Navigate to="/admin/dashboard" replace />;
     }
-    return <Navigate to="/" replace />;
+    // return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

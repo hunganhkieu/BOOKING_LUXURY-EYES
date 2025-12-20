@@ -29,6 +29,8 @@ import {
   useGetAppointmentsQuery,
 } from "../../app/services/appointmentApi";
 import type { Appointment } from "../../types/Booking";
+import { useAppSelector } from "../../app/hook";
+import { skipToken } from "@reduxjs/toolkit/query";
 
 const { TextArea } = Input;
 
@@ -52,7 +54,10 @@ const AppointmentHistoryPage = () => {
   const [cancelReason, setCancelReason] = useState<string>("");
   const [otherReason, setOtherReason] = useState<string>("");
 
-  const { data, isLoading, isError } = useGetAppointmentsQuery();
+  const user = useAppSelector((state) => state.auth.user);
+  const { data, isLoading, isError } = useGetAppointmentsQuery(
+    user?._id ?? skipToken
+  );
   const getAppointments: Appointment[] = data?.data ?? [];
 
   const [cancelAppointment, { isLoading: isCancelling }] =
@@ -171,6 +176,7 @@ const AppointmentHistoryPage = () => {
         await cancelAppointment({
           id: selectedAppointment._id,
           reason,
+          scheduleId: selectedAppointment.scheduleId,
         }).unwrap();
         message.success("Hủy lịch thành công");
       }
@@ -179,6 +185,7 @@ const AppointmentHistoryPage = () => {
         await cancelAppointmentConfirm({
           id: selectedAppointment._id,
           reason,
+          scheduleId: selectedAppointment.scheduleId,
         }).unwrap();
         message.success("Gửi yêu cầu hủy lịch thành công");
       }
@@ -290,6 +297,11 @@ const AppointmentHistoryPage = () => {
             <Card className="text-center py-12">
               <CalendarOutlined className="text-6xl text-gray-300 mb-4" />
               <p className="text-gray-500">Không có lịch khám nào</p>
+              <Link to={"/dat-lich-kham"}>
+                <Button icon={<CalendarOutlined />} block>
+                  Đặt lịch khám mới
+                </Button>
+              </Link>
             </Card>
           ) : (
             getFilteredAppointments()?.map((appointment: Appointment) => {
@@ -478,9 +490,7 @@ const AppointmentHistoryPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Mã phiếu:</span>
                   <span className="font-medium">
-                    {`${selectedAppointment._id?.slice(
-                      -4
-                    )}-${selectedAppointment.scheduleId.slice(-2)}`}
+                    {selectedAppointment._id?.slice(-6).toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -599,9 +609,6 @@ const AppointmentHistoryPage = () => {
                 size="large"
               >
                 <Select.Option value="busy">Bận việc đột xuất</Select.Option>
-                <Select.Option value="health">
-                  Sức khỏe không cho phép
-                </Select.Option>
                 <Select.Option value="rescheduled">
                   Muốn đổi lịch khác
                 </Select.Option>
