@@ -1,11 +1,11 @@
 import {
   CalendarOutlined,
-
   EnvironmentOutlined,
   HomeOutlined,
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import { skipToken } from "@reduxjs/toolkit/query";
 import { Avatar, Button, Card, DatePicker, Input, message, Select } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../../app/hook";
 import {
   useCreateBookingMutation,
+  useGetAppointmentsQuery,
   useGetBookingByScheduleIdQuery,
 } from "../../app/services/appointmentApi";
 import { useGetDoctorsQuery } from "../../app/services/doctorApi";
@@ -30,7 +31,7 @@ import {
 import AddPatientModal from "../../components/AddPatientModal";
 import DoctorList from "../../components/DoctorList";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
-import type { BookingPayload } from "../../types/Booking";
+import { BLOCK_STATUSES } from "../../types/Booking";
 import type { Doctor } from "../../types/Doctor";
 import type {
   CreatePatientInput,
@@ -40,6 +41,7 @@ import type {
   DoctorSchedule,
   SelectedSchedule,
   TimeSlot,
+  TimeSlotUI,
 } from "../../types/Schedule";
 import type { AppointmentStatus } from "./AppointmentHistoryPage";
 dayjs.extend(isSameOrAfter);
@@ -71,6 +73,8 @@ const BookingAppointmentPage = () => {
     selectedDoctor?._id as string,
     {
       skip: !selectedDoctor?._id,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     }
   );
   const scheduleDoctorId: DoctorSchedule[] = schedule?.data ?? [];
@@ -83,20 +87,37 @@ const BookingAppointmentPage = () => {
     useState<SelectedSchedule | null>(null);
 
   // appointment ScheduleId
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const {
+    data: getBookingUserId,
+    // isLoading,
+    // isError,
+  } = useGetAppointmentsQuery(user?._id ?? skipToken, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  const getBookingUserData = useMemo(
+    () => getBookingUserId?.data ?? [],
+    [getBookingUserId]
+  );
   const { data: getBookingBySlotId } = useGetBookingByScheduleIdQuery(
     scheduleItem?._id,
     {
       skip: !scheduleItem?._id,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     }
   );
   const getBookingBySchedIdData = useMemo(
     () => getBookingBySlotId?.data ?? [],
     [getBookingBySlotId]
   );
+
   const [symptoms, setSymptoms] = useState<string>("");
 
   // patient-profile
-  const user = useAppSelector((state) => state.auth.user);
   const { data: patientProfileResponse } = useGetPatientProfileQuery();
   const PatientProData: PatientResponse[] = patientProfileResponse?.data ?? [];
   const [createPatientProfile, { isLoading: isCreatingPatient }] =
@@ -115,16 +136,16 @@ const BookingAppointmentPage = () => {
   };
 
   //format date
-  const formatDate = (isoDate: string) => {
-    return new Date(isoDate).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-  const handleTimeSelect = (slot: TimeSlot) => {
+  // const formatDate = (isoDate: string) => {
+  //   return new Date(isoDate).toLocaleDateString("vi-VN", {
+  //     day: "2-digit",
+  //     month: "2-digit",
+  //     year: "numeric",
+  //   });
+  // };
+  const handleTimeSelect = (slot: TimeSlotUI) => {
     if (selectedDoctor && scheduleItem) {
-      const formattedDate = formatDate(slot.date);
+      const formattedDate = dayjs(slot.date).format("DD/MM");
 
       setSelectedSlot(slot);
 
@@ -235,7 +256,7 @@ const BookingAppointmentPage = () => {
   }, [doctors, listSchedule, fromDate, toDate]);
 
   // check trùng lịch
-  const availableSlots = useMemo(() => {
+  const slotsWithState = useMemo<TimeSlotUI[]>(() => {
     if (!scheduleItem?.timeSlots || !getBookingBySchedIdData) {
       return [];
     }
@@ -246,35 +267,50 @@ const BookingAppointmentPage = () => {
       .filter((slot) => {
         // Chỉ lấy slot từ hôm nay trở đi
         const slotDay = dayjs(slot.date).startOf("day");
-        return slotDay.isSame(today) || slotDay.isAfter(today);
+        return slotDay.isAfter(today);
       })
-      .filter((slot) => {
-        // Chỉ lấy slot còn AVAILABLE
-        if (slot.status !== "AVAILABLE") return false;
-
+      .map((slot) => {
         const slotDate = dayjs(slot.date).format("YYYY-MM-DD");
 
-        // Kiểm tra đã có appointment nào đặt chưa
-        const isBooked = getBookingBySchedIdData.some((apm: BookingPayload) => {
-          const apmDate = dayjs(apm.dateTime).format("YYYY-MM-DD");
+        const doctorBlocked = getBookingBySchedIdData.some((apm) => {
           return (
-            apmDate === slotDate &&
+            dayjs(apm.dateTime).format("YYYY-MM-DD") === slotDate &&
             apm.time === slot.time &&
-            [
-              "PENDING",
-              "CONFIRM",
-              "CHECKIN",
-              "DONE",
-              "REQUEST-CANCELED",
-            ].includes(apm.status)
+            BLOCK_STATUSES.includes(apm.status)
           );
         });
-        return !isBooked;
+
+        const userBlocked = getBookingUserData.some(
+          (apm) =>
+            dayjs(apm.dateTime).format("YYYY-MM-DD") === slotDate &&
+            apm.time === slot.time &&
+            BLOCK_STATUSES.includes(apm.status)
+        );
+
+        const disabled =
+          slot.status !== "AVAILABLE" || doctorBlocked || userBlocked;
+
+        return {
+          ...slot,
+          disabled,
+          disabledReason: doctorBlocked
+            ? "Khung giờ đã được đặt"
+            : userBlocked
+            ? "Bạn đã có lịch cùng khung giờ"
+            : slot.status !== "AVAILABLE"
+            ? "Khung giờ không khả dụng"
+            : undefined,
+        };
       });
-  }, [scheduleItem?.timeSlots, getBookingBySchedIdData]);
+  }, [scheduleItem?.timeSlots, getBookingUserData, getBookingBySchedIdData]);
 
   //đặt lịch
   const handleConfirmBooking = async () => {
+    if (!user?._id || !isAuthenticated) {
+      message.error("Vui lòng đăng nhập");
+      nav("/auth/login");
+      return;
+    }
     if (!selectedPerson) {
       message.error("Vui lòng chọn người tới khám");
       return false;
@@ -292,6 +328,7 @@ const BookingAppointmentPage = () => {
 
     try {
       const payload = {
+        userId: user?._id ?? "",
         scheduleId: scheduleItem._id,
         scheduleSlotId: Number(selectedSchedule.scheduleSlotId) || 0,
         dateTime: selectedSchedule?.date ?? "",
@@ -383,7 +420,6 @@ const BookingAppointmentPage = () => {
                     }
                     return false;
                   }}
-
                 >
                   <Select.OptGroup label="Khám cho bản thân">
                     <Select.Option
@@ -560,7 +596,7 @@ const BookingAppointmentPage = () => {
                   <TimeSlotPicker
                     scheduleItem={{
                       ...scheduleItem,
-                      timeSlots: availableSlots,
+                      timeSlots: slotsWithState,
                     }}
                     selectedDate={selectedDate}
                     setSelectedDate={setSelectedDate}

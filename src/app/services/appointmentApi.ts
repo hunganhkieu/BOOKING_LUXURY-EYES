@@ -13,10 +13,11 @@ export const appointmentApi = createApi({
   }),
   tagTypes: ["Appointments", "AppointmentScheduleId"],
   endpoints: (builder) => ({
-    getAppointments: builder.query<BookingResponse, void>({
-      query: () => "appointments",
+    getAppointments: builder.query<BookingResponse, string>({
+      query: (userId) => `appointments/?userId=${userId}`,
       providesTags: ["Appointments"],
     }),
+
     getBookingByScheduleId: builder.query<BookingResponse, string>({
       query: (scheduleId) => `appointments?scheduleId=${scheduleId}`,
       providesTags: (_result, _error, scheduleId) => [
@@ -37,26 +38,32 @@ export const appointmentApi = createApi({
 
     cancelAppointment: builder.mutation<
       Appointment,
-      { id: string; reason: string }
+      { id: string; reason: string; scheduleId: string }
     >({
       query: ({ id, reason }) => ({
         url: `appointments/${id}`,
         method: "PATCH",
         body: { status: "CANCELED", reason },
       }),
-      invalidatesTags: ["Appointments"],
+      invalidatesTags: (_r, _e, arg) => [
+        "Appointments",
+        { type: "AppointmentScheduleId", id: arg.scheduleId },
+      ],
     }),
 
     cancelAppointmentConfirm: builder.mutation<
       Appointment,
-      { id: string; reason: string }
+      { id: string; reason: string; scheduleId: string }
     >({
       query: ({ id, reason }) => ({
         url: `appointments/${id}`,
         method: "PATCH",
         body: { status: "REQUEST-CANCELED", reason },
       }),
-      invalidatesTags: ["Appointments"],
+      invalidatesTags: (_r, _e, arg) => [
+        "Appointments",
+        { type: "AppointmentScheduleId", id: arg.scheduleId },
+      ],
     }),
   }),
 });

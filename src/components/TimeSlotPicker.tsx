@@ -1,10 +1,11 @@
 import { CloudOutlined, SunOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, Tooltip } from "antd";
 import { getDayLabel } from "../utils/dateUtils";
 import type {
   DoctorSchedule,
   SelectedSchedule,
   TimeSlot,
+  TimeSlotUI,
 } from "../types/Schedule";
 import dayjs from "dayjs";
 
@@ -23,15 +24,7 @@ const TimeSlotPicker = ({
   selectedSchedule,
   handleTimeSelect,
 }: TimeSlotPickerProps) => {
-  // const today = dayjs().startOf("day");
-  // Lọc slot từ hôm nay trở đi
-  // let validTimeSlots =
-  //   scheduleItem?.timeSlots.filter((slot) => {
-  //     const slotDate = dayjs(slot.date).startOf("day");
-  //     return slotDate.isSame(today) || slotDate.isAfter(today);
-  //   }) ?? [];
-
-  let validTimeSlots = scheduleItem?.timeSlots ?? [];
+  let validTimeSlots: TimeSlot[] = [...(scheduleItem?.timeSlots ?? [])];
 
   // SẮP XẾP THEO NGÀY TĂNG DẦN
   validTimeSlots = validTimeSlots.sort((a, b) =>
@@ -57,7 +50,7 @@ const TimeSlotPicker = ({
     : null;
 
   // Lấy tất cả slot của ngày đã chọn + loại bỏ trùng giờ + SẮP XẾP THEO GIỜ
-  const slotsOfSelectedDay = selectedDay
+  const slotsOfSelectedDay: TimeSlotUI[] = selectedDay
     ? Array.from(
         validTimeSlots
           .filter((slot) => dayjs(slot.date).startOf("day").isSame(selectedDay))
@@ -134,19 +127,24 @@ const TimeSlotPicker = ({
               {morningSlots.length > 0 ? (
                 <div className="grid grid-cols-5 gap-2">
                   {morningSlots.map((slot) => (
-                    <Button
+                    <Tooltip
                       key={slot.scheduleSlotId + slot.time}
-                      type={
-                        selectedSchedule &&
-                        selectedSchedule.time === slot.time &&
-                        selectedSchedule.date === slot.date
-                          ? "primary"
-                          : "default"
-                      }
-                      onClick={() => handleTimeSelect(slot)}
+                      title={slot.disabledReason}
                     >
-                      {slot.time}
-                    </Button>
+                      <Button
+                        type={
+                          selectedSchedule &&
+                          selectedSchedule.time === slot.time &&
+                          selectedSchedule.date === slot.date
+                            ? "primary"
+                            : "default"
+                        }
+                        onClick={() => handleTimeSelect(slot)}
+                        disabled={slot.disabled} // <-- khóa slot đã bị đặt hoặc không khả dụng
+                      >
+                        {slot.time}
+                      </Button>
+                    </Tooltip>
                   ))}
                 </div>
               ) : (
@@ -164,19 +162,24 @@ const TimeSlotPicker = ({
               {afternoonSlots.length > 0 ? (
                 <div className="grid grid-cols-5 gap-2">
                   {afternoonSlots.map((slot) => (
-                    <Button
+                    <Tooltip
                       key={slot.scheduleSlotId + slot.time}
-                      type={
-                        selectedSchedule &&
-                        selectedSchedule.time === slot.time &&
-                        selectedSchedule.date === slot.date
-                          ? "primary"
-                          : "default"
-                      }
-                      onClick={() => handleTimeSelect(slot)}
+                      title={slot.disabledReason}
                     >
-                      {slot.time}
-                    </Button>
+                      <Button
+                        type={
+                          selectedSchedule &&
+                          selectedSchedule.time === slot.time &&
+                          selectedSchedule.date === slot.date
+                            ? "primary"
+                            : "default"
+                        }
+                        onClick={() => handleTimeSelect(slot)}
+                        disabled={slot.disabled}
+                      >
+                        {slot.time}
+                      </Button>
+                    </Tooltip>
                   ))}
                 </div>
               ) : (

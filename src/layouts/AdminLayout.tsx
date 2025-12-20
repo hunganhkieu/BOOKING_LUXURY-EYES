@@ -5,13 +5,12 @@ import {
   EyeOutlined,
   LogoutOutlined,
   TeamOutlined,
-  UserOutlined,
 } from "@ant-design/icons";
 import { Layout, Menu } from "antd";
 import React from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useAppDispatch } from "../app/hook";
 import { logout } from "../app/features/authSlice";
+import { useAppDispatch } from "../app/hook";
 
 const { Header, Sider, Content } = Layout;
 
@@ -24,7 +23,7 @@ const AdminLayout: React.FC = () => {
     dispatch(logout());
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    navigate("/auth/login");
+    navigate("/auth");
   };
 
   return (
@@ -48,7 +47,7 @@ const AdminLayout: React.FC = () => {
           }}
         >
           <EyeOutlined style={{ marginRight: 8 }} />
-          VisionCare
+          Luxury Eyes
         </div>
 
         {/* MENU */}
@@ -71,11 +70,11 @@ const AdminLayout: React.FC = () => {
               label: "Lịch hẹn",
             },
 
-            {
-              key: "/admin/patients",
-              icon: <UserOutlined />,
-              label: "Bệnh nhân",
-            },
+            // {
+            //   key: "/admin/patients",
+            //   icon: <UserOutlined />,
+            //   label: "Bệnh nhân",
+            // },
             {
               key: "/admin/schedule",
               icon: <ClockCircleOutlined />,
@@ -87,7 +86,12 @@ const AdminLayout: React.FC = () => {
               label: "Bác sĩ",
             },
             {
-              key: "logout",
+              key: "/admin/user",
+              icon: <TeamOutlined />,
+              label: "Người dùng",
+            },
+            {
+              key: "login",
               icon: <LogoutOutlined />,
               label: "Đăng xuất",
               danger: true,
