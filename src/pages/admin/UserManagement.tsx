@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Table, Tag, Select, Switch, message, Avatar } from "antd";
+import { Avatar, Select, Switch, Table, Tag, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { useEffect, useState } from "react";
 import api from "../../api";
 
 type UserRole = "USER" | "DOCTOR" | "ADMIN";
