@@ -19,7 +19,7 @@ export default function AuthRoute({ children }: AuthRouteProps) {
     if (user.role === "admin") {
       return <Navigate to="/admin/dashboard" replace />;
     }
-    return <Navigate to="/forbidden" replace />;
+    // return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
