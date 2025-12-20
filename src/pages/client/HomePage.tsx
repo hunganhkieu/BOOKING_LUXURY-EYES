@@ -11,9 +11,15 @@ import { Button, Card } from "antd";
 import banner from "../../assets/imgs/banner.png";
 import { useAppSelector } from "../../app/hook";
 import { Link } from "react-router-dom";
+import { useGetDoctorsQuery } from "../../app/services/doctorApi";
+import type { Doctor } from "../../types/Doctor";
 
 const HomePage = () => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const { data } = useGetDoctorsQuery();
+
+  const doctors: Doctor[] = data?.data ?? [];
   const services = [
     {
       icon: <CalendarOutlined className="text-4xl" />,
@@ -52,6 +58,33 @@ const HomePage = () => {
     },
   ];
 
+  // {[
+  //         {
+  //           name: "BS. Nguyễn Văn A",
+  //           title: "Trưởng khoa Nhãn khoa",
+  //           specialty: "Chuyên khoa Mắt",
+  //           experience: "15+ năm kinh nghiệm",
+  //           img: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=faces",
+  //           achievements: ["Phẫu thuật Lasik", "Điều trị Glaucoma"],
+  //         },
+  //         {
+  //           name: "BS. Trần Thị B",
+  //           title: "Phó khoa Nhãn khoa",
+  //           specialty: "Chuyên khoa Võng mạc",
+  //           experience: "12+ năm kinh nghiệm",
+  //           img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=faces",
+  //           achievements: ["Phẫu thuật Cataract", "Bệnh lý võng mạc"],
+  //         },
+  //         {
+  //           name: "BS. Lê Văn C",
+  //           title: "Bác sĩ Chuyên khoa II",
+  //           specialty: "Chuyên khoa Khúc xạ",
+  //           experience: "10+ năm kinh nghiệm",
+  //           img: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop&crop=faces",
+  //           achievements: ["Điều chỉnh khúc xạ", "Cận thị tiến triển"],
+  //         },
+  //       ]
+
   const news = [
     {
       title: "Thông báo lịch làm việc Tết Nguyên đán 2025",
@@ -72,7 +105,12 @@ const HomePage = () => {
       // link: "/news/3",
     },
   ];
-
+  const experiencedDoctors = doctors
+    .map((doc) => ({
+      ...doc,
+      experience_year: Number(doc.experience_year),
+    }))
+    .filter((doc) => doc.experience_year >= 10);
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section - Modern Layout */}
@@ -289,40 +327,15 @@ const HomePage = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {[
-            {
-              name: "BS. Nguyễn Văn A",
-              title: "Trưởng khoa Nhãn khoa",
-              specialty: "Chuyên khoa Mắt",
-              experience: "15+ năm kinh nghiệm",
-              img: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=faces",
-              achievements: ["Phẫu thuật Lasik", "Điều trị Glaucoma"],
-            },
-            {
-              name: "BS. Trần Thị B",
-              title: "Phó khoa Nhãn khoa",
-              specialty: "Chuyên khoa Võng mạc",
-              experience: "12+ năm kinh nghiệm",
-              img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=faces",
-              achievements: ["Phẫu thuật Cataract", "Bệnh lý võng mạc"],
-            },
-            {
-              name: "BS. Lê Văn C",
-              title: "Bác sĩ Chuyên khoa II",
-              specialty: "Chuyên khoa Khúc xạ",
-              experience: "10+ năm kinh nghiệm",
-              img: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop&crop=faces",
-              achievements: ["Điều chỉnh khúc xạ", "Cận thị tiến triển"],
-            },
-          ].map((doctor, idx) => (
+          {experiencedDoctors.slice(0, 3).map((doctor) => (
             <div
-              key={idx}
+              key={doctor._id}
               className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
             >
               {/* Image */}
               <div className="relative overflow-hidden">
                 <img
-                  src={doctor.img}
+                  src={doctor.avatar}
                   alt={doctor.name}
                   className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -331,7 +344,7 @@ const HomePage = () => {
                 {/* Experience Badge */}
                 <div className="absolute top-4 right-4">
                   <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-                    {doctor.experience}
+                    {doctor.experience_year} năm kinh nghiệm
                   </span>
                 </div>
               </div>
@@ -343,33 +356,9 @@ const HomePage = () => {
                     {doctor.name}
                   </h3>
                   <p className="text-blue-600 font-medium text-sm mb-1">
-                    {doctor.title}
+                    {doctor.description}
                   </p>
-                  <p className="text-gray-600 text-sm">{doctor.specialty}</p>
                 </div>
-
-                {/* Achievements */}
-                <div className="space-y-2 pt-2 border-t border-gray-100">
-                  {doctor.achievements.map((achievement, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 text-sm text-gray-600"
-                    >
-                      <CheckCircleOutlined className="text-green-500 flex-shrink-0" />
-                      <span>{achievement}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Action Button */}
-                {/* <Button
-                  type="link"
-                  className="w-full mt-2 text-blue-600 font-medium group-hover:text-blue-700"
-                  onClick={() => (window.location.href = "/doctors/" + idx)}
-                >
-                  Xem chi tiết
-                  <RightOutlined className="ml-1 text-xs group-hover:translate-x-1 transition-transform" />
-                </Button> */}
               </div>
 
               {/* Hover Effect Border */}

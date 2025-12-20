@@ -40,10 +40,10 @@ const HeaderClient = () => {
   ];
 
   const loggedMenu: MenuProps["items"] = [
-    {
-      key: "profile",
-      label: <Link to="/profile">Thông tin cá nhân</Link>,
-    },
+    // {
+    //   key: "profile",
+    //   label: <Link to="/profile">Thông tin cá nhân</Link>,
+    // },
     {
       key: "logout",
       label: <span style={{ color: "red" }}>Đăng xuất</span>,
