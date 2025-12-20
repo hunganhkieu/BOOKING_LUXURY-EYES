@@ -9,11 +9,12 @@ export const doctorApi = createApi({
   tagTypes: ["Doctors"], // khai báo danh sách các tag sẽ dùng
   endpoints: (builder) => ({
     // builder là object chứa các hàm để tạo endpoint
-    getDoctors: builder.query<DoctorResponse, { inputSearch: string }>({
-      // .query là để fetch dữ liệu
-      query: ({ inputSearch }) =>
-        `doctors/?${inputSearch ? `name=${inputSearch}` : ""}`, // nối tiếp đường dẫn với baseUrl
-      providesTags: ["Doctors"], // đặt tên tag cho từng query
+    getDoctors: builder.query<DoctorResponse, { inputSearch?: string } | void>({
+      query: (params) =>
+        params?.inputSearch
+          ? `doctors/?name=${params.inputSearch}`
+          : `doctors/`,
+      providesTags: ["Doctors"],
     }),
   }),
 });
