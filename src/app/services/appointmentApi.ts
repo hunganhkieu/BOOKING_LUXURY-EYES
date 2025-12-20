@@ -11,7 +11,7 @@ export const appointmentApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api-class-o1lo.onrender.com/api/luxury_eyes/",
   }),
-  tagTypes: ["Appointments", "AppointmentScheduleId"],
+  tagTypes: ["Appointments", "AppointmentScheduleId", "ScheduleId"],
   endpoints: (builder) => ({
     getAppointments: builder.query<BookingResponse, string>({
       query: (userId) => `appointments/?userId=${userId}`,
@@ -33,6 +33,7 @@ export const appointmentApi = createApi({
       invalidatesTags: (_result, _error, arg) => [
         "Appointments",
         { type: "AppointmentScheduleId", id: arg.scheduleId },
+        { type: "ScheduleId", id: arg.doctor.id },
       ],
     }),
 
