@@ -18,13 +18,9 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs, { Dayjs } from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api";
+import type { Doctor } from "../../types/Doctor";
 
-interface Doctor {
-  _id: string;
-  name: string;
-  specialty?: string;
-  defaultPrice?: number;
-}
+
 
 interface TimeSlot {
   date: string;
@@ -97,7 +93,7 @@ const ScheduleManagement = () => {
     form.setFieldsValue({
       blockTime: undefined,
     });
-    if (doctor?.defaultPrice) {
+    if (doctor?.price) {
       form.setFieldsValue({
         roomName: form.getFieldValue("roomName"),
       });
@@ -155,7 +151,7 @@ const ScheduleManagement = () => {
       doctorId: values.doctorId,
       roomId: values.roomId,
       roomName: values.roomName,
-      price: Number(doctor?.defaultPrice ?? 0),
+      price: Number(doctor?.price ?? 0),
       timeSlots,
     };
 
