@@ -5,7 +5,6 @@ import { useDispatch } from "react-redux";
 import { setAuth } from "../../app/features/authSlice";
 import type { LoginPayload } from "../../types/User";
 
-
 const LoginPage = () => {
   const nav = useNavigate();
   const dispatch = useDispatch();
